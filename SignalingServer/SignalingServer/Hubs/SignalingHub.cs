@@ -12,7 +12,7 @@ namespace SignalingServer.Hubs
 
         public Task SendMessage(object message, string roomName)
         {
-            EmitLog("Client said: " + message, roomName);
+            EmitLog("Client " + Context.ConnectionId + " said: " + message, roomName);
 
             return Clients.OthersInGroup(roomName).SendAsync("message", message);
         }
