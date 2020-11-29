@@ -1,3 +1,8 @@
 export const environment = {
-  production: true
+  production: true,
+  signalingServerUrl: 'http://localhost:5000/hubs/signaling',
+  iceServers: [
+    {urls: 'stun:stun.1.google.com:19302'},
+    {urls: 'stun:stun1.l.google.com:19302'}
+  ]
 };

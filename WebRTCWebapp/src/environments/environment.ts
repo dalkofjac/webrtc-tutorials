@@ -3,7 +3,12 @@
 // The list of file replacements can be found in `angular.json`.
 
 export const environment = {
-  production: false
+  production: false,
+  signalingServerUrl: 'http://localhost:5000/hubs/signaling',
+  iceServers: [
+    {urls: 'stun:stun.1.google.com:19302'},
+    {urls: 'stun:stun1.l.google.com:19302'}
+  ]
 };
 
 /*

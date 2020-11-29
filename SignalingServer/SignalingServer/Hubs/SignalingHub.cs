@@ -8,7 +8,7 @@ namespace SignalingServer.Hubs
     // [Authorize]
     public class SignalingHub : Hub
     {
-        public Dictionary<string, List<string>> ConnectedClients = new Dictionary<string, List<string>>();
+        public static Dictionary<string, List<string>> ConnectedClients = new Dictionary<string, List<string>>();
 
         public Task SendMessage(object message, string roomName)
         {
@@ -37,7 +37,7 @@ namespace SignalingServer.Hubs
 
             if (numberOfClients == 1)
             {
-                EmitCreated(roomName);
+                EmitCreated();
                 EmitLog("Client "+ Context.ConnectionId + " created the room " + roomName, roomName);
             }
             else
@@ -63,7 +63,7 @@ namespace SignalingServer.Hubs
                 if (ConnectedClients[roomName].Count == 0)
                 {
                     ConnectedClients.Remove(roomName);
-                    EmitLog("Room " + roomName + " is now empty - resetting its state.", roomName);
+                    EmitLog("Room " + roomName + " is now empty - resetting its state", roomName);
                 }
             }
 
@@ -75,19 +75,19 @@ namespace SignalingServer.Hubs
             return Groups.AddToGroupAsync(Context.ConnectionId, roomName);
         }
 
-        private Task EmitCreated(string roomName)
+        private Task EmitCreated()
         {
-            return Clients.Caller.SendAsync("created", roomName);
+            return Clients.Caller.SendAsync("created");
         }
 
         private Task EmitJoined(string roomName)
         {
-            return Clients.Group(roomName).SendAsync("joined", roomName);
+            return Clients.Group(roomName).SendAsync("joined");
         }
 
         private Task EmitLog(string message, string roomName)
         {
-            return Clients.Group(roomName).SendAsync("log", message);
+            return Clients.Group(roomName).SendAsync("log", "[Server]" + message);
         }
     }
 }
