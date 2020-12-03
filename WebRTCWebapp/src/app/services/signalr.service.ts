@@ -1,4 +1,4 @@
-import { EventEmitter, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HubConnection, HubConnectionBuilder, HubConnectionState, IHttpConnectionOptions } from '@microsoft/signalr';
 import { environment } from 'src/environments/environment';
 
@@ -10,8 +10,6 @@ export class SignalrService {
   private baseUrl: string = environment.signalingServerUrl;
 
   private hubConnection: HubConnection | undefined;
-
-  isConnectedEmitter = new EventEmitter<boolean>();
 
   constructor() { }
 
@@ -50,13 +48,13 @@ export class SignalrService {
     }
   }
 
-  disconnect() {
+  disconnect(): void {
     if (this.isConnected()) {
       this.hubConnection.stop();
     }
   }
 
-  isConnected() {
+  isConnected(): boolean {
     return this.hubConnection && this.hubConnection.state === HubConnectionState.Connected;
   }
 }

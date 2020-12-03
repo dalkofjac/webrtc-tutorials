@@ -1,7 +1,6 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute } from '@angular/router';
-import { Subscription } from 'rxjs';
 import { SignalrService } from 'src/app/services/signalr.service';
 import { environment } from 'src/environments/environment';
 
@@ -39,7 +38,7 @@ export class SessionCallComponent implements OnInit, OnDestroy {
     this.start();
   }
 
-  start() {
+  start(): void {
     // #1 connect to signaling server
     this.signaling.connect('/signaling', true).then(() => {
       if (this.signaling.isConnected()) {
@@ -54,7 +53,7 @@ export class SessionCallComponent implements OnInit, OnDestroy {
     this.getUserMedia();
   }
 
-  defineSignaling() {
+  defineSignaling(): void {
     this.signaling.define('log', (message: any) => {
       console.log(message);
     });
@@ -90,7 +89,7 @@ export class SessionCallComponent implements OnInit, OnDestroy {
     });
   }
 
-  getUserMedia() {
+  getUserMedia(): void {
     navigator.mediaDevices.getUserMedia({
       audio: true,
       video: true
@@ -107,7 +106,7 @@ export class SessionCallComponent implements OnInit, OnDestroy {
     });
   }
 
-  initiateCall() {
+  initiateCall(): void {
     console.log('Initiating a call.');
     if (!this.isStarted && this.localStream && this.isChannelReady) {
       this.createPeerConnection();
@@ -122,7 +121,7 @@ export class SessionCallComponent implements OnInit, OnDestroy {
     }
   }
 
-  createPeerConnection() {
+  createPeerConnection(): void {
     console.log('Creating peer connection.');
     try {
       this.peerConnection = new RTCPeerConnection({
@@ -149,7 +148,7 @@ export class SessionCallComponent implements OnInit, OnDestroy {
     }
   }
 
-  sendOffer() {
+  sendOffer(): void {
     console.log('Sending offer to peer.');
     this.addTransceivers();
     this.peerConnection.createOffer()
@@ -159,7 +158,7 @@ export class SessionCallComponent implements OnInit, OnDestroy {
     });
   }
 
-  sendAnswer() {
+  sendAnswer(): void {
     console.log('Sending answer to peer.');
     this.addTransceivers();
     this.peerConnection.createAnswer().then((sdp: RTCSessionDescription) => {
@@ -168,7 +167,7 @@ export class SessionCallComponent implements OnInit, OnDestroy {
     });
   }
 
-  addIceCandidate(message: any) {
+  addIceCandidate(message: any): void {
     console.log('Adding ice candidate.');
     const candidate = new RTCIceCandidate({
       sdpMLineIndex: message.label,
@@ -177,7 +176,7 @@ export class SessionCallComponent implements OnInit, OnDestroy {
     this.peerConnection.addIceCandidate(candidate);
   }
 
-  sendIceCandidate(event: RTCPeerConnectionIceEvent) {
+  sendIceCandidate(event: RTCPeerConnectionIceEvent): void {
     console.log('Sending ice candidate to remote peer.');
     this.sendMessage({
       type: 'candidate',
@@ -187,32 +186,32 @@ export class SessionCallComponent implements OnInit, OnDestroy {
     });
   }
 
-  sendMessage(message) {
+  sendMessage(message): void {
     this.signaling.invoke('SendMessage', message, this.room);
   }
 
-  addTransceivers() {
+  addTransceivers(): void {
     console.log('Adding transceivers.');
     const init = { direction: 'recvonly', streams: [], sendEncodings: [] } as RTCRtpTransceiverInit;
     this.peerConnection.addTransceiver('audio', init);
     this.peerConnection.addTransceiver('video', init);
   }
 
-  addLocalStream(stream: MediaStream) {
+  addLocalStream(stream: MediaStream): void {
     console.log('Local stream added.');
     this.localStream = stream;
     this.localVideo.nativeElement.srcObject = this.localStream;
     this.localVideo.nativeElement.muted = 'muted';
   }
 
-  addRemoteStream(stream: MediaStream) {
+  addRemoteStream(stream: MediaStream): void {
     console.log('Remote stream added.');
     this.remoteStream = stream;
     this.remoteVideo.nativeElement.srcObject = this.remoteStream;
     this.remoteVideo.nativeElement.muted = 'muted';
   }
 
-  hangup() {
+  hangup(): void {
     console.log('Hanging up.');
     this.stopPeerConnection();
     this.sendMessage('bye');
@@ -222,14 +221,14 @@ export class SessionCallComponent implements OnInit, OnDestroy {
     }, 1000);
   }
 
-  handleRemoteHangup() {
+  handleRemoteHangup(): void {
     console.log('Session terminated by remote peer.');
     this.stopPeerConnection();
     this.isInitiator = true;
     this.snack.open('Remote client has left the call.', 'Dismiss', { duration: 5000 });
   }
 
-  stopPeerConnection() {
+  stopPeerConnection(): void {
     this.isStarted = false;
     this.isChannelReady = false;
     if (this.peerConnection) {
@@ -238,7 +237,7 @@ export class SessionCallComponent implements OnInit, OnDestroy {
     }
   }
 
-  ngOnDestroy() {
+  ngOnDestroy(): void {
     this.hangup();
     if (this.localStream && this.localStream.active) {
       this.localStream.getTracks().forEach((track) => { track.stop(); });

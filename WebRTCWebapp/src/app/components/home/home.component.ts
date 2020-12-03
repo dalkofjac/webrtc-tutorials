@@ -28,7 +28,7 @@ export class HomeComponent implements OnInit {
     });
   }
 
-  startSessionCall() {
+  startSessionCall(): void {
     this.router.navigate(['session-call/' + this.room]);
   }
 
