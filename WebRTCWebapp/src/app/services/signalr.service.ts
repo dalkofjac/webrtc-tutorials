@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { EventEmitter, Injectable } from '@angular/core';
 import { HubConnection, HubConnectionBuilder, HubConnectionState, IHttpConnectionOptions } from '@microsoft/signalr';
 import { environment } from 'src/environments/environment';
 
@@ -7,25 +7,30 @@ import { environment } from 'src/environments/environment';
 })
 export class SignalrService {
 
-  url: string = environment.signalingServerUrl;
+  private baseUrl: string = environment.signalingServerUrl;
 
-  hubConnection: HubConnection | undefined;
+  private hubConnection: HubConnection | undefined;
+
+  isConnectedEmitter = new EventEmitter<boolean>();
 
   constructor() { }
 
-  async connect(initMessage: string, room: string): Promise<void> {
+  async connect(path: string, withToken: boolean): Promise<void> {
+    const url = this.baseUrl + path;
+
     this.hubConnection = new HubConnectionBuilder()
-      .withUrl(this.url)
+      .withUrl(url, withToken ? {
+        accessTokenFactory: () => {
+          return sessionStorage.getItem('token');
+        }
+      } as IHttpConnectionOptions : null)
       .withAutomaticReconnect()
       .build();
 
-    this.hubConnection.start()
+    return this.hubConnection.start()
       .then(() => {
-        if(this.isConnected()) {
-          console.log('SignalR: Connected to the server: ' + this.url);
-          if(initMessage && room) {
-            this.invoke(initMessage, room);
-          }
+        if (this.isConnected()) {
+          console.log('SignalR: Connected to the server: ' + url);
         }
       })
       .catch(err => {
@@ -39,9 +44,9 @@ export class SignalrService {
     }
   }
 
-  async invoke(methodName: string, ...args: any[]): Promise<void> {
+  async invoke(methodName: string, ...args: any[]): Promise<any> {
     if (this.isConnected()) {
-      this.hubConnection.invoke(methodName, ...args);
+      return this.hubConnection.invoke(methodName, ...args);
     }
   }
 
@@ -51,7 +56,7 @@ export class SignalrService {
     }
   }
 
-  private isConnected() {
+  isConnected() {
     return this.hubConnection && this.hubConnection.state === HubConnectionState.Connected;
   }
 }

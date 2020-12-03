@@ -25,7 +25,7 @@
     </mat-form-field>
     
     <div class="buttons">
-      <button class="send-button" mat-raised-button color="primary" (click)="startSessionCall()">
+      <button class="send-button" mat-raised-button color="primary" (click)="startSessionCall()" [disabled]="roomName.errors">
         Start
       </button>
     </div>

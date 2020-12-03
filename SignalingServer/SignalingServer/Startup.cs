@@ -1,9 +1,15 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
 using SignalingServer.Hubs;
+using System;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace SignalingServer
 {
@@ -28,6 +34,34 @@ namespace SignalingServer
                        .AllowCredentials();
             }));
 
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters()
+                {
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(TokenHelper.SECRET))
+                };
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        if (context.Request.Path.Value.StartsWith("/hubs/signaling") && (context.Request.Query.ContainsKey("access_token")))
+                        {
+                            context.Token = context.Request.Query["access_token"];
+                        }
+
+                        return Task.CompletedTask;
+                    },
+                };
+            });
+
             services.AddSignalR();
         }
 
@@ -39,16 +73,21 @@ namespace SignalingServer
                 app.UseDeveloperExceptionPage();
             }
 
+            app.UseCors("default");
+
             app.UseDefaultFiles();
             
             app.UseStaticFiles();
             
             app.UseRouting();
 
-            app.UseCors("default");
+            app.UseAuthentication();
+
+            app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapHub<AuthHub>("/hubs/auth");
                 endpoints.MapHub<SignalingHub>("/hubs/signaling");
             });
         }

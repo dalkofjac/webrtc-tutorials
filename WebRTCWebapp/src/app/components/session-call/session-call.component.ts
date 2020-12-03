@@ -1,6 +1,7 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { SignalrService } from 'src/app/services/signalr.service';
 import { environment } from 'src/environments/environment';
 
@@ -9,7 +10,7 @@ import { environment } from 'src/environments/environment';
   templateUrl: './session-call.component.html',
   styleUrls: ['./session-call.component.scss']
 })
-export class SessionCallComponent implements OnInit {
+export class SessionCallComponent implements OnInit, OnDestroy {
 
   @ViewChild('localVideo') localVideo: ElementRef;
   @ViewChild('remoteVideo') remoteVideo: ElementRef;
@@ -40,7 +41,11 @@ export class SessionCallComponent implements OnInit {
 
   start() {
     // #1 connect to signaling server
-    this.signaling.connect('CreateOrJoinRoom', this.room);
+    this.signaling.connect('/signaling', true).then(() => {
+      if (this.signaling.isConnected()) {
+        this.signaling.invoke('CreateOrJoinRoom', this.room);
+      }
+    });
 
     // #2 define signaling communication
     this.defineSignaling();
@@ -51,7 +56,7 @@ export class SessionCallComponent implements OnInit {
 
   defineSignaling() {
     this.signaling.define('log', (message: any) => {
-      console.log(message)
+      console.log(message);
     });
 
     this.signaling.define('created', () => {
@@ -97,7 +102,7 @@ export class SessionCallComponent implements OnInit {
         this.initiateCall();
       }
     })
-    .catch(function(e) {
+    .catch((e) => {
       alert('getUserMedia() error: ' + e.name + ': ' + e.message);
     });
   }
@@ -134,7 +139,7 @@ export class SessionCallComponent implements OnInit {
       };
 
       this.peerConnection.ontrack = (event: RTCTrackEvent) => {
-        if(event.streams[0]) {
+        if (event.streams[0]) {
           this.addRemoteStream(event.streams[0]);
         }
       };
@@ -162,7 +167,7 @@ export class SessionCallComponent implements OnInit {
       this.sendMessage(sdp);
     });
   }
-  
+
   addIceCandidate(message: any) {
     console.log('Adding ice candidate.');
     const candidate = new RTCIceCandidate({
@@ -236,10 +241,10 @@ export class SessionCallComponent implements OnInit {
   ngOnDestroy() {
     this.hangup();
     if (this.localStream && this.localStream.active) {
-      this.localStream.getTracks().forEach(function(track) { track.stop(); });
+      this.localStream.getTracks().forEach((track) => { track.stop(); });
     }
-    if(this.remoteStream && this.remoteStream.active) {
-      this.remoteStream.getTracks().forEach(function(track) { track.stop(); });
+    if (this.remoteStream && this.remoteStream.active) {
+      this.remoteStream.getTracks().forEach((track) => { track.stop(); });
     }
   }
 }

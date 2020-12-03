@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace SignalingServer.Hubs
 {
-    // [Authorize]
+    [Authorize]
     public class SignalingHub : Hub
     {
         public static Dictionary<string, List<string>> ConnectedClients = new Dictionary<string, List<string>>();
