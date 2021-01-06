@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">WebRTC Android</string>
+    <string name="act_main_title">WebRTC Android</string>
+    <string name="act_main_room_name">Room name (e.g. blue whale)</string>
+    <string name="act_main_btn_start">Start</string>
+    <string name="act_main_subtitle">Session call</string>
+    <string name="error_room_name_length">Session call room has to have at least two characters.</string>
+</resources>
