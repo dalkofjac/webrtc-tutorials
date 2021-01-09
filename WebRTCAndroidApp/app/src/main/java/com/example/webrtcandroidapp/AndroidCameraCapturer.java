@@ -1,7 +1,5 @@
 package com.example.webrtcandroidapp;
 
-import android.util.Log;
-
 import org.webrtc.Camera1Capturer;
 import org.webrtc.Camera1Enumerator;
 import org.webrtc.CameraEnumerator;
@@ -15,14 +13,6 @@ public class AndroidCameraCapturer extends Camera1Capturer implements VideoCaptu
 
     public static AndroidCameraCapturer create(boolean captureToTexture, boolean isCameraFront) {
         return new AndroidCameraCapturer(getDeviceName(captureToTexture, isCameraFront), captureToTexture);
-    }
-
-    public void switchCamera() {
-        super.switchCamera(null);
-    }
-
-    public void dispose() {
-        super.dispose();
     }
 
     private static String getDeviceName(boolean captureToTexture, boolean isCameraFront) {

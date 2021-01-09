@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.WindowManager;
+import android.widget.Toast;
 
 import com.google.gson.JsonIOException;
 import com.google.gson.internal.LinkedTreeMap;
@@ -43,11 +44,11 @@ public class SessionCallActivity extends AppCompatActivity {
 
     private String mRoomName;
     private SignalrService mSignalrService;
+    private PeerConnectionFactory mPeerConnectionFactory;
+    private PeerConnection mPeerConnection;
     private EglBase mRootEglBase;
     private SurfaceViewRenderer mLocalVideoView;
     private SurfaceViewRenderer mRemoteVideoView;
-    private PeerConnectionFactory mPeerConnectionFactory;
-    private PeerConnection mPeerConnection;
     private AudioTrack mLocalAudioTrack;
     private VideoTrack mLocalVideoTrack;
     private AndroidCameraCapturer mCameraCapturer;
@@ -82,15 +83,9 @@ public class SessionCallActivity extends AppCompatActivity {
         hangup();
         mRootEglBase.release();
         mCameraCapturer.dispose();
-        mSignalrService.dispose();
         PeerConnectionFactory.shutdownInternalTracer();
+        new Handler().postDelayed(() -> mSignalrService.dispose(), 1000);
         super.onDestroy();
-    }
-
-    @Override
-    public void onBackPressed() {
-        hangup();
-        super.onBackPressed();
     }
 
     private void initViews() {
@@ -140,6 +135,8 @@ public class SessionCallActivity extends AppCompatActivity {
                 String data = (String) message;
                 if (data.equalsIgnoreCase("got user media")) {
                     initiateCall();
+                } else if(data.equalsIgnoreCase("bye")) {
+                    handleRemoteHangup();
                 }
             } else if (message instanceof LinkedTreeMap) {
                 Object type = ((LinkedTreeMap) message).get("type");
@@ -148,16 +145,15 @@ public class SessionCallActivity extends AppCompatActivity {
                         if(!mIsStarted) {
                             initiateCall();
                         }
-                        mPeerConnection.setRemoteDescription(null,
+                        mPeerConnection.setRemoteDescription(new CustomSdpObserver(),
                                 new SessionDescription(SessionDescription.Type.OFFER, ((LinkedTreeMap) message).get("sdp").toString()));
                         sendAnswer();
                     } else if (type.toString().equalsIgnoreCase("answer") && mIsStarted) {
-                        mPeerConnection.setRemoteDescription(null,
-                                new SessionDescription(SessionDescription.Type.ANSWER, ((LinkedTreeMap) message).get("sdp").toString()));
+                        mPeerConnection.setRemoteDescription(new CustomSdpObserver(),
+                                new SessionDescription(SessionDescription.Type.fromCanonicalForm(((LinkedTreeMap) message).get("type").toString()),
+                                        ((LinkedTreeMap) message).get("sdp").toString()));
                     } else if (type.toString().equalsIgnoreCase("candidate") && mIsStarted) {
                         addIceCandidate((LinkedTreeMap) message);
-                    } else if (type.toString().equalsIgnoreCase("bye") && mIsStarted) {
-                        handleRemoteHangup();
                     }
                 }
             }
@@ -197,14 +193,14 @@ public class SessionCallActivity extends AppCompatActivity {
         // Initialize the VideoCapturer
         SurfaceTextureHelper surfaceTextureHelper = SurfaceTextureHelper.create("CaptureThreadOne", mRootEglBase.getEglBaseContext());
         mCameraCapturer = AndroidCameraCapturer.create(true, true);
-        mCameraCapturer.initialize(surfaceTextureHelper, this, null);
+        mCameraCapturer.initialize(surfaceTextureHelper, this, videoSource.getCapturerObserver());
 
         // Start recording
         mCameraCapturer.startCapture(640, 480, 30);
         mLocalVideoTrack.addSink(mLocalVideoView);
 
         // Try to initiate a call
-        mSignalrService.invoke("got user media", mRoomName);
+        sendMessage("got user media");
         if(mIsInitiator) {
             initiateCall();
         }
@@ -240,7 +236,7 @@ public class SessionCallActivity extends AppCompatActivity {
         config.iceTransportsType = PeerConnection.IceTransportsType.ALL;
         config.keyType = PeerConnection.KeyType.ECDSA;
 
-        mPeerConnection = mPeerConnectionFactory.createPeerConnection(config, new PeerConnection.Observer() {
+        mPeerConnection = mPeerConnectionFactory.createPeerConnection(config, new CustomPeerConnectionObserver() {
             @Override
             public void onIceCandidate(IceCandidate iceCandidate) {
                 Log.d(TAG, "mPeerConnection::onIceCandidate");
@@ -257,33 +253,6 @@ public class SessionCallActivity extends AppCompatActivity {
                     }
                 }
             }
-
-            @Override
-            public void onSignalingChange(PeerConnection.SignalingState signalingState) { }
-
-            @Override
-            public void onIceConnectionChange(PeerConnection.IceConnectionState iceConnectionState) { }
-
-            @Override
-            public void onIceConnectionReceivingChange(boolean b) { }
-
-            @Override
-            public void onIceGatheringChange(PeerConnection.IceGatheringState iceGatheringState) { }
-
-            @Override
-            public void onIceCandidatesRemoved(IceCandidate[] iceCandidates) { }
-
-            @Override
-            public void onAddStream(MediaStream mediaStream) { }
-
-            @Override
-            public void onRemoveStream(MediaStream mediaStream) { }
-
-            @Override
-            public void onDataChannel(DataChannel dataChannel) { }
-
-            @Override
-            public void onRenegotiationNeeded() { }
         });
     }
 
@@ -291,12 +260,12 @@ public class SessionCallActivity extends AppCompatActivity {
         Log.d(TAG, "sendOffer");
 
         addTransceivers();
-        mPeerConnection.createOffer(new SdpObserver() {
+        mPeerConnection.createOffer(new CustomSdpObserver() {
             @Override
             public void onCreateSuccess(SessionDescription sessionDescription) {
-                mPeerConnection.setLocalDescription(null, sessionDescription);
+                mPeerConnection.setLocalDescription(new CustomSdpObserver(), sessionDescription);
                 try {
-                    JSONObject offer = new JSONObject();
+                    LinkedTreeMap<String, Object> offer = new LinkedTreeMap<String, Object>();
                     offer.put("type", sessionDescription.type.canonicalForm());
                     offer.put("sdp", sessionDescription.description);
                     sendMessage(offer);
@@ -304,16 +273,6 @@ public class SessionCallActivity extends AppCompatActivity {
                     Log.e(TAG, "sendOffer failed.", e);
                 }
             }
-
-            @Override
-            public void onSetSuccess() { }
-
-            @Override
-            public void onCreateFailure(String s) { }
-
-            @Override
-            public void onSetFailure(String s) { }
-
         }, new MediaConstraints());
     }
 
@@ -321,12 +280,12 @@ public class SessionCallActivity extends AppCompatActivity {
         Log.d(TAG, "sendAnswer");
 
         addTransceivers();
-        mPeerConnection.createAnswer(new SdpObserver() {
+        mPeerConnection.createAnswer(new CustomSdpObserver() {
             @Override
             public void onCreateSuccess(SessionDescription sessionDescription) {
-                mPeerConnection.setLocalDescription(null, sessionDescription);
+                mPeerConnection.setLocalDescription(new CustomSdpObserver(), sessionDescription);
                 try {
-                    JSONObject answer = new JSONObject();
+                    LinkedTreeMap<String, Object> answer = new LinkedTreeMap<String, Object>();
                     answer.put("type", sessionDescription.type.canonicalForm());
                     answer.put("sdp", sessionDescription.description);
                     sendMessage(answer);
@@ -334,15 +293,6 @@ public class SessionCallActivity extends AppCompatActivity {
                     Log.e(TAG, "sendAnswer failed.", e);
                 }
             }
-
-            @Override
-            public void onSetSuccess() { }
-
-            @Override
-            public void onCreateFailure(String s) { }
-
-            @Override
-            public void onSetFailure(String s) { }
         }, new MediaConstraints());
     }
 
@@ -357,7 +307,7 @@ public class SessionCallActivity extends AppCompatActivity {
         Log.d(TAG, "sendIceCandidate");
 
         try {
-            JSONObject candidate = new JSONObject();
+            LinkedTreeMap<String, Object> candidate = new LinkedTreeMap<String, Object>();
             candidate.put("type", "candidate");
             candidate.put("label", iceCandidate.sdpMLineIndex);
             candidate.put("id", iceCandidate.sdpMid);
@@ -372,7 +322,7 @@ public class SessionCallActivity extends AppCompatActivity {
         Log.d(TAG, "sendMessage");
 
         if(mSignalrService != null) {
-            mSignalrService.invoke("message", message, mRoomName);
+            mSignalrService.invoke("SendMessage", message, mRoomName);
         }
     }
 
@@ -391,7 +341,6 @@ public class SessionCallActivity extends AppCompatActivity {
         stopPeerConnection();
         sendMessage("bye");
         mSignalrService.invoke("LeaveRoom", mRoomName);
-        new Handler().postDelayed(() -> mSignalrService.disconnect(), 1000);
     }
 
     private void handleRemoteHangup() {
@@ -399,6 +348,7 @@ public class SessionCallActivity extends AppCompatActivity {
 
         stopPeerConnection();
         mIsInitiator = true;
+        runOnUiThread(() -> Toast.makeText(this, getString(R.string.session_call_remote_client_left), Toast.LENGTH_LONG).show());
     }
 
     private void stopPeerConnection() {

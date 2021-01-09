@@ -33,16 +33,11 @@
             android:id="@+id/et_room"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="16dp"
-            android:layout_marginRight="16dp"
-            android:layout_marginBottom="10dp"
-            android:gravity="center"
+            android:layout_margin="16dp"
             android:hint="@string/act_main_room_name"
-            android:maxLines="1"
-            android:minLines="1"
-            android:padding="15dp"
             android:singleLine="true"
-            android:textColor="@android:color/black" />
+            android:textAlignment="center"
+            android:gravity="center_horizontal" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <Button
