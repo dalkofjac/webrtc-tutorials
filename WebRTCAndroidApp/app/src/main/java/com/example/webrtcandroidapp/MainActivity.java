@@ -6,11 +6,14 @@ import androidx.core.app.ActivityCompat;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import io.reactivex.disposables.Disposable;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -20,15 +23,32 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Manifest.permission.WRITE_EXTERNAL_STORAGE
     };
 
+    private SignalrService mSignalrService;
+    private Disposable mTokenDisposable;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         findViewById(R.id.btn_start).setOnClickListener(this);
+        mSignalrService = new SignalrService( "/auth", false);
 
         if(!hasPermissions(this, mPermissions)) {
             requestPermissions();
         }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        getAccessToken();
+    }
+
+    @Override
+    protected void onDestroy() {
+        mSignalrService.dispose();
+        mTokenDisposable.dispose();
+        super.onDestroy();
     }
 
     @Override
@@ -73,5 +93,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }
         return true;
+    }
+
+    private void getAccessToken() {
+        mSignalrService.connect(() -> {
+            if (mSignalrService.isConnected()) {
+                mTokenDisposable = mSignalrService.invoke(String.class, "Authorize").subscribe(token -> {
+                    if(token != null) {
+                        SharedPreferences.Editor editor = getSharedPreferences("USER_PREFERENCES", Context.MODE_PRIVATE).edit();
+                        editor.putString("TOKEN", token);
+                        editor.apply();
+                    }
+                });
+            }
+        });
     }
 }

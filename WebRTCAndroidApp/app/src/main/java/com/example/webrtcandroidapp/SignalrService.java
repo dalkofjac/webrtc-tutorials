@@ -1,5 +1,6 @@
 package com.example.webrtcandroidapp;
 
+import android.content.Context;
 import android.util.Log;
 
 import com.microsoft.signalr.Action;
@@ -7,6 +8,8 @@ import com.microsoft.signalr.Action1;
 import com.microsoft.signalr.HubConnection;
 import com.microsoft.signalr.HubConnectionBuilder;
 import com.microsoft.signalr.HubConnectionState;
+
+import io.reactivex.Single;
 
 import static io.reactivex.internal.functions.Functions.emptyConsumer;
 
@@ -20,11 +23,22 @@ public class SignalrService {
 
     private HubConnection mHubConnection;
 
-    public SignalrService(String hubUrl) {
-        Log.d(TAG, "SignalrService; hubUrl: " + hubUrl);
+    public SignalrService(String path, boolean withToken) {
+        Log.d(TAG, "SignalrService; path: " + path);
 
         try {
-            mHubConnection = HubConnectionBuilder.create(hubUrl).build();
+            String hubUrl = BuildConfig.SIGNALING_SERVER_URL + path;
+            if(withToken) {
+                mHubConnection = HubConnectionBuilder.create(hubUrl)
+                        .withAccessTokenProvider(Single.defer(() -> {
+                            String token = WebRTCAndroidApp.get()
+                                    .getSharedPreferences("USER_PREFERENCES", Context.MODE_PRIVATE)
+                                    .getString("TOKEN", null);
+                            return (token != null) ? Single.just(token) : Single.just("");
+                        })).build();
+            } else {
+                mHubConnection = HubConnectionBuilder.create(hubUrl).build();
+            }
         } catch (Exception e) {
             Log.e(TAG, "SignalrService: Failed. [Error]: ", e);
         }
@@ -77,13 +91,29 @@ public class SignalrService {
 
         if (isConnected()) {
             try {
-                mHubConnection.send(methodName, args);
+                mHubConnection.invoke(methodName, args);
             } catch (Exception e) {
                 Log.e(TAG, "invoke: Failed. [Error]: ", e);
             }
         } else {
             Log.e(TAG, "invoke: Failed. [Connection]: " + (mHubConnection != null ? mHubConnection.getConnectionState() : null));
         }
+    }
+
+    public <T> Single<T> invoke(Class<T> returnType, String methodName, Object... args) {
+        Log.d(TAG, "invoke; methodName: " + methodName);
+
+        if (isConnected()) {
+            try {
+                return mHubConnection.invoke(returnType, methodName, args);
+            } catch (Exception e) {
+                Log.e(TAG, "invoke: Failed. [Error]: ", e);
+            }
+        } else {
+            Log.e(TAG, "invoke: Failed. [Connection]: " + (mHubConnection != null ? mHubConnection.getConnectionState() : null));
+        }
+
+        return Single.never();
     }
 
     public void disconnect() {

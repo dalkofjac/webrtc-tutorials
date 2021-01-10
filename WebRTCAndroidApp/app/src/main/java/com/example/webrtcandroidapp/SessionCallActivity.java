@@ -68,7 +68,7 @@ public class SessionCallActivity extends AppCompatActivity {
             this.finish();
         }
 
-        mSignalrService = new SignalrService(BuildConfig.SIGNALING_HUB_URL);
+        mSignalrService = new SignalrService( "/signaling", true);
         initViews();
     }
 
