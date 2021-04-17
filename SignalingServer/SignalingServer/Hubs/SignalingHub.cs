@@ -87,7 +87,7 @@ namespace SignalingServer.Hubs
 
         private Task EmitLog(string message, string roomName)
         {
-            return Clients.Group(roomName).SendAsync("log", "[Server]" + message);
+            return Clients.Group(roomName).SendAsync("log", "[Server]: " + message);
         }
     }
 }

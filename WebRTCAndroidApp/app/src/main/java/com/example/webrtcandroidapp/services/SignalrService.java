@@ -1,8 +1,10 @@
-package com.example.webrtcandroidapp;
+package com.example.webrtcandroidapp.services;
 
 import android.content.Context;
 import android.util.Log;
 
+import com.example.webrtcandroidapp.BuildConfig;
+import com.example.webrtcandroidapp.WebRTCAndroidApp;
 import com.microsoft.signalr.Action;
 import com.microsoft.signalr.Action1;
 import com.microsoft.signalr.HubConnection;

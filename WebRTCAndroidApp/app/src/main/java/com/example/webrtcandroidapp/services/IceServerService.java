@@ -1,4 +1,6 @@
-package com.example.webrtcandroidapp;
+package com.example.webrtcandroidapp.services;
+
+import com.example.webrtcandroidapp.BuildConfig;
 
 import org.webrtc.PeerConnection;
 

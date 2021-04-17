@@ -1,4 +1,4 @@
-package com.example.webrtcandroidapp;
+package com.example.webrtcandroidapp.observers;
 
 import android.util.Log;
 

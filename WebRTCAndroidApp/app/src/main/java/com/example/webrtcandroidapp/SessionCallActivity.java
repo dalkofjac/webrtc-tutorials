@@ -8,14 +8,15 @@ import android.util.Log;
 import android.view.WindowManager;
 import android.widget.Toast;
 
-import com.google.gson.JsonIOException;
+import com.example.webrtcandroidapp.capturers.AndroidCameraCapturer;
+import com.example.webrtcandroidapp.observers.CustomPeerConnectionObserver;
+import com.example.webrtcandroidapp.observers.CustomSdpObserver;
+import com.example.webrtcandroidapp.services.IceServerService;
+import com.example.webrtcandroidapp.services.SignalrService;
 import com.google.gson.internal.LinkedTreeMap;
 
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.webrtc.AudioSource;
 import org.webrtc.AudioTrack;
-import org.webrtc.DataChannel;
 import org.webrtc.DefaultVideoDecoderFactory;
 import org.webrtc.DefaultVideoEncoderFactory;
 import org.webrtc.EglBase;
@@ -27,16 +28,13 @@ import org.webrtc.PeerConnection;
 import org.webrtc.PeerConnectionFactory;
 import org.webrtc.RtpReceiver;
 import org.webrtc.RtpTransceiver;
-import org.webrtc.SdpObserver;
 import org.webrtc.SessionDescription;
 import org.webrtc.SurfaceTextureHelper;
 import org.webrtc.SurfaceViewRenderer;
 import org.webrtc.VideoSource;
 import org.webrtc.VideoTrack;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 public class SessionCallActivity extends AppCompatActivity {
 

@@ -1,4 +1,4 @@
-package com.example.webrtcandroidapp;
+package com.example.webrtcandroidapp.capturers;
 
 import org.webrtc.Camera1Capturer;
 import org.webrtc.Camera1Enumerator;
