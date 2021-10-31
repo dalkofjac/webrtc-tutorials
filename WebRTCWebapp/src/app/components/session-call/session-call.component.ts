@@ -1,15 +1,19 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute } from '@angular/router';
+import { MessageSender } from 'src/app/models/message-sender';
 import { SignalrService } from 'src/app/services/signalr.service';
+import { WebrtcUtils } from 'src/app/services/webrtc-utils.service';
 import { environment } from 'src/environments/environment';
+
+const useWebrtcUtils = true;
 
 @Component({
   selector: 'app-session-call',
   templateUrl: './session-call.component.html',
   styleUrls: ['./session-call.component.scss']
 })
-export class SessionCallComponent implements OnInit, OnDestroy {
+export class SessionCallComponent implements OnInit, OnDestroy, MessageSender {
 
   @ViewChild('localVideo') localVideo: ElementRef;
   @ViewChild('remoteVideo') remoteVideo: ElementRef;
@@ -124,10 +128,14 @@ export class SessionCallComponent implements OnInit, OnDestroy {
   createPeerConnection(): void {
     console.log('Creating peer connection.');
     try {
-      this.peerConnection = new RTCPeerConnection({
-        iceServers: environment.iceServers,
-        sdpSemantics: 'unified-plan'
-      } as RTCConfiguration);
+      if (useWebrtcUtils) {
+        this.peerConnection = WebrtcUtils.createPeerConnection(environment.iceServers, 'unified-plan', 'balanced', 'all', 'require', null, [], 0);
+      } else {
+        this.peerConnection = new RTCPeerConnection({
+          iceServers: environment.iceServers,
+          sdpSemantics: 'unified-plan'
+        } as RTCConfiguration);
+      }
 
       this.peerConnection.onicecandidate = (event: RTCPeerConnectionIceEvent) => {
         if (event.candidate) {
@@ -142,6 +150,16 @@ export class SessionCallComponent implements OnInit, OnDestroy {
           this.addRemoteStream(event.streams[0]);
         }
       };
+
+      if (useWebrtcUtils) {
+        this.peerConnection.oniceconnectionstatechange = () => {
+          if (this.peerConnection?.iceConnectionState === 'connected') {
+            WebrtcUtils.logStats(this.peerConnection, 'all');
+          } else if (this.peerConnection?.iceConnectionState === 'failed') {
+            WebrtcUtils.doIceRestart(this.peerConnection, this);
+          }
+        }
+      }
     } catch (e) {
       console.log('Failed to create PeerConnection.', e.message);
       return;
@@ -153,7 +171,17 @@ export class SessionCallComponent implements OnInit, OnDestroy {
     this.addTransceivers();
     this.peerConnection.createOffer()
     .then((sdp: RTCSessionDescriptionInit) => {
-      this.peerConnection.setLocalDescription(sdp);
+      let finalSdp = sdp;
+      if(useWebrtcUtils) {
+        finalSdp = WebrtcUtils.changeBitrate(sdp, '1000', '500', '6000');
+        if(WebrtcUtils.getCodecs('audio').find(c => c.indexOf(WebrtcUtils.OPUS) !== -1)) {
+          finalSdp = WebrtcUtils.setCodecs(finalSdp, 'audio', WebrtcUtils.OPUS);
+        }
+        if(WebrtcUtils.getCodecs('video').find(c => c.indexOf(WebrtcUtils.H264) !== -1)) {
+          finalSdp = WebrtcUtils.setCodecs(finalSdp, 'video', WebrtcUtils.H264);
+        }
+      }
+      this.peerConnection.setLocalDescription(finalSdp);
       this.sendMessage(sdp);
     });
   }
