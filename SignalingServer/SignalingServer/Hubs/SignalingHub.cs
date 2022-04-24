@@ -10,16 +10,16 @@ namespace SignalingServer.Hubs
     {
         public static Dictionary<string, List<string>> ConnectedClients = new Dictionary<string, List<string>>();
 
-        public Task SendMessage(object message, string roomName)
+        public async Task SendMessage(object message, string roomName)
         {
-            EmitLog("Client " + Context.ConnectionId + " said: " + message, roomName);
+            await EmitLog("Client " + Context.ConnectionId + " said: " + message, roomName);
 
-            return Clients.OthersInGroup(roomName).SendAsync("message", message);
+            await Clients.OthersInGroup(roomName).SendAsync("message", message);
         }
 
-        public Task CreateOrJoinRoom(string roomName)
+        public async Task CreateOrJoinRoom(string roomName)
         {
-            EmitLog("Received request to create or join room " + roomName + " from a client " + Context.ConnectionId, roomName);
+            await EmitLog("Received request to create or join room " + roomName + " from a client " + Context.ConnectionId, roomName);
 
             if (!ConnectedClients.ContainsKey(roomName))
             {
@@ -31,63 +31,61 @@ namespace SignalingServer.Hubs
                 ConnectedClients[roomName].Add(Context.ConnectionId);
             }
 
-            EmitJoinRoom(roomName);
+            await EmitJoinRoom(roomName);
             
             var numberOfClients = ConnectedClients[roomName].Count;
 
             if (numberOfClients == 1)
             {
-                EmitCreated();
-                EmitLog("Client "+ Context.ConnectionId + " created the room " + roomName, roomName);
+                await EmitCreated();
+                await EmitLog("Client "+ Context.ConnectionId + " created the room " + roomName, roomName);
             }
             else
             {
-                EmitJoined(roomName);
-                EmitLog("Client " + Context.ConnectionId + " joined the room " + roomName, roomName);
+                await EmitJoined(roomName);
+                await EmitLog("Client " + Context.ConnectionId + " joined the room " + roomName, roomName);
             }
 
-            EmitLog("Room " + roomName + " now has " + numberOfClients + " client(s)", roomName);
-
-            return Task.Run(() => { return; });
+            await EmitLog("Room " + roomName + " now has " + numberOfClients + " client(s)", roomName);
         }
 
-        public Task LeaveRoom(string roomName)
+        public async Task LeaveRoom(string roomName)
         {
-            EmitLog("Received request to leave the room " + roomName + " from a client " + Context.ConnectionId, roomName);
+            await EmitLog("Received request to leave the room " + roomName + " from a client " + Context.ConnectionId, roomName);
 
             if (ConnectedClients.ContainsKey(roomName) && ConnectedClients[roomName].Contains(Context.ConnectionId))
             {
                 ConnectedClients[roomName].Remove(Context.ConnectionId);
-                EmitLog("Client " + Context.ConnectionId + " left the room " + roomName, roomName);
+                await EmitLog("Client " + Context.ConnectionId + " left the room " + roomName, roomName);
 
                 if (ConnectedClients[roomName].Count == 0)
                 {
                     ConnectedClients.Remove(roomName);
-                    EmitLog("Room " + roomName + " is now empty - resetting its state", roomName);
+                    await EmitLog("Room " + roomName + " is now empty - resetting its state", roomName);
                 }
             }
 
-            return Groups.RemoveFromGroupAsync(Context.ConnectionId, roomName);
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomName);
         }
 
-        private Task EmitJoinRoom(string roomName)
+        private async Task EmitJoinRoom(string roomName)
         {
-            return Groups.AddToGroupAsync(Context.ConnectionId, roomName);
+            await Groups.AddToGroupAsync(Context.ConnectionId, roomName);
         }
 
-        private Task EmitCreated()
+        private async Task EmitCreated()
         {
-            return Clients.Caller.SendAsync("created");
+            await Clients.Caller.SendAsync("created");
         }
 
-        private Task EmitJoined(string roomName)
+        private async Task EmitJoined(string roomName)
         {
-            return Clients.Group(roomName).SendAsync("joined");
+            await Clients.Group(roomName).SendAsync("joined");
         }
 
-        private Task EmitLog(string message, string roomName)
+        private async Task EmitLog(string message, string roomName)
         {
-            return Clients.Group(roomName).SendAsync("log", "[Server]: " + message);
+            await Clients.Group(roomName).SendAsync("log", "[Server]: " + message);
         }
     }
 }

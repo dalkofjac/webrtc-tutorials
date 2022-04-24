@@ -16,14 +16,17 @@ export class SignalrService {
   async connect(path: string, withToken: boolean): Promise<void> {
     const url = this.baseUrl + path;
 
-    this.hubConnection = new HubConnectionBuilder()
-      .withUrl(url, withToken ? {
+    const builder = new HubConnectionBuilder();
+    if (!withToken) {
+      builder.withUrl(url);
+    } else {
+      builder.withUrl(url, {
         accessTokenFactory: () => {
           return sessionStorage.getItem('token');
         }
-      } as IHttpConnectionOptions : null)
-      .withAutomaticReconnect()
-      .build();
+      } as IHttpConnectionOptions);
+    }
+    this.hubConnection = builder.withAutomaticReconnect().build();
 
     return this.hubConnection.start()
       .then(() => {

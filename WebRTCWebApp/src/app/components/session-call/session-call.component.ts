@@ -6,7 +6,7 @@ import { SignalrService } from 'src/app/services/signalr.service';
 import { WebrtcUtils } from 'src/app/services/webrtc-utils.service';
 import { environment } from 'src/environments/environment';
 
-const useWebrtcUtils = true;
+const useWebrtcUtils = false;
 
 @Component({
   selector: 'app-session-call',
