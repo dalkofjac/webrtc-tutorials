@@ -103,16 +103,18 @@ export class WebrtcUtils {
         const lineWords = str.split(' ');
         // get all lines (payloads) related to given codec
         const payloads = this.getPayloads(sdp.sdp, codecMimeType);
-        if (payloads.length > 0) {
+        // proceed only with relavant payloads for this specific sdp line
+        const relevantPayloads = payloads.filter(p => lineWords.indexOf(p) !== -1);
+        if (relevantPayloads.length > 0) {
           // remove the codecs from current positions in the line
-          payloads.forEach(codec => {
+          relevantPayloads.forEach(codec => {
             const index = lineWords.indexOf(codec, 2);
             lineWords.splice(index, 1);
           });
           // add first three default values (M=, #, protocols)
           str = lineWords[0] + ' ' + lineWords[1] + ' ' + lineWords[2];
           // add chosen codecs on the beginning
-          payloads.forEach(codec => {
+          relevantPayloads.forEach(codec => {
             str = str + ' ' + codec;
           });
           // add the rest of codecs on the end
