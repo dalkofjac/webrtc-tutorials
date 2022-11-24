@@ -32,7 +32,7 @@ export class WebrtcUtils {
     try {
       // try using new restartIce method
       peerConnection.restartIce();
-    } catch(error) {
+    } catch (error) {
       // if it is not supported, use the old implementation
       peerConnection.createOffer({
         iceRestart: true
@@ -46,10 +46,10 @@ export class WebrtcUtils {
 
   // WebRTC stats reports
 
-  public static logStats(peerConnection: RTCPeerConnection, type: 'inbound' | 'outbound' | 'all') {
+  public static logStats(peerConnection: RTCPeerConnection, type: 'inbound' | 'outbound' | 'all'): void {
     peerConnection.getStats().then(stat => {
       stat.forEach(report => {
-        switch(type) {
+        switch (type) {
           case 'inbound':
             if (report.type === 'inbound-rtp') {
               console.log(report);

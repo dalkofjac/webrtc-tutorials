@@ -1,3 +1,3 @@
 export interface MessageSender {
-    sendMessage(message: any);
+    sendMessage(message: any): void;
 }

@@ -129,7 +129,8 @@ export class SessionCallComponent implements OnInit, OnDestroy, MessageSender {
     console.log('Creating peer connection.');
     try {
       if (useWebrtcUtils) {
-        this.peerConnection = WebrtcUtils.createPeerConnection(environment.iceServers, 'unified-plan', 'balanced', 'all', 'require', null, [], 0);
+        this.peerConnection =
+          WebrtcUtils.createPeerConnection(environment.iceServers, 'unified-plan', 'balanced', 'all', 'require', null, [], 0);
       } else {
         this.peerConnection = new RTCPeerConnection({
           iceServers: environment.iceServers,
@@ -158,7 +159,7 @@ export class SessionCallComponent implements OnInit, OnDestroy, MessageSender {
           } else if (this.peerConnection?.iceConnectionState === 'failed') {
             WebrtcUtils.doIceRestart(this.peerConnection, this);
           }
-        }
+        };
       }
     } catch (e) {
       console.log('Failed to create PeerConnection.', e.message);
@@ -172,12 +173,12 @@ export class SessionCallComponent implements OnInit, OnDestroy, MessageSender {
     this.peerConnection.createOffer()
     .then((sdp: RTCSessionDescriptionInit) => {
       let finalSdp = sdp;
-      if(useWebrtcUtils) {
+      if (useWebrtcUtils) {
         finalSdp = WebrtcUtils.changeBitrate(sdp, '1000', '500', '6000');
-        if(WebrtcUtils.getCodecs('audio').find(c => c.indexOf(WebrtcUtils.OPUS) !== -1)) {
+        if (WebrtcUtils.getCodecs('audio').find(c => c.indexOf(WebrtcUtils.OPUS) !== -1)) {
           finalSdp = WebrtcUtils.setCodecs(finalSdp, 'audio', WebrtcUtils.OPUS);
         }
-        if(WebrtcUtils.getCodecs('video').find(c => c.indexOf(WebrtcUtils.H264) !== -1)) {
+        if (WebrtcUtils.getCodecs('video').find(c => c.indexOf(WebrtcUtils.H264) !== -1)) {
           finalSdp = WebrtcUtils.setCodecs(finalSdp, 'video', WebrtcUtils.H264);
         }
       }
