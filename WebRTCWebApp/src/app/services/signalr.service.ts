@@ -13,6 +13,10 @@ export class SignalrService {
 
   constructor() { }
 
+  getConnectionId(): string {
+    return this.hubConnection.connectionId;
+  }
+
   async connect(path: string, withToken: boolean): Promise<void> {
     const url = this.baseUrl + path;
 

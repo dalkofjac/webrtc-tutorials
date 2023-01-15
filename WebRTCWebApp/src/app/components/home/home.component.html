@@ -8,21 +8,31 @@
   <p class="main-text">Session Call</p>
   
   <form>
-    <mat-form-field class="input-field">
+    <div class="form-field-div">
+      <mat-form-field class="input-field">
+        <mat-label>Room name (e.g. blue whale)</mat-label>
+        <input matInput autofocus required [(ngModel)]="room" name="roomName" #roomName="ngModel" type="text" minlength="2">
+            
+        <mat-error *ngIf="roomName.invalid && (roomName.dirty || roomName.touched)">
+          <mat-error *ngIf="roomName.errors.required">
+            The room name is required
+          </mat-error>
+          <mat-error *ngIf="roomName.errors.minlength">
+            The room name needs to have at least 2 characters
+          </mat-error>
+        </mat-error>
 
-      <mat-label>Room name (e.g. blue whale)</mat-label>
-      <input matInput autofocus required [(ngModel)]="room" name="roomName" #roomName="ngModel" type="text" minlength="2">
-          
-      <mat-error *ngIf="roomName.invalid && (roomName.dirty || roomName.touched)">
-        <mat-error *ngIf="roomName.errors.required">
-          The room name is required
-        </mat-error>
-        <mat-error *ngIf="roomName.errors.minlength">
-          The room name needs to have at least 2 characters
-        </mat-error>
-      </mat-error>
-  
-    </mat-form-field>
+      </mat-form-field>
+    </div>
+
+    <div class="form-field-div">
+      <mat-form-field class="form-field-select" appearance="fill">
+        <mat-label>Mode</mat-label>
+        <mat-select [(ngModel)]="mode" name="mode">
+          <mat-option *ngFor="let item of modes" [value]="item">{{item}}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
     
     <div class="buttons">
       <button class="send-button" mat-raised-button color="primary" (click)="startSessionCall()" [disabled]="roomName.errors">

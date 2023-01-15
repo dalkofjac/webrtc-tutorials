@@ -15,13 +15,16 @@ import { HomeComponent } from './components/home/home.component';
 import { SessionCallComponent } from './components/session-call/session-call.component';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
+import { SessionCallMeshComponent } from './components/session-call-mesh/session-call-mesh.component';
+import { MatSelectModule } from '@angular/material/select';
 
 
 @NgModule({
   declarations: [
     AppComponent,
     HomeComponent,
-    SessionCallComponent
+    SessionCallComponent,
+    SessionCallMeshComponent
   ],
   imports: [
     BrowserModule,
@@ -36,7 +39,8 @@ import { HttpClientModule } from '@angular/common/http';
     MatToolbarModule,
     MatFormFieldModule,
     MatIconModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatSelectModule
   ],
   providers: [],
   bootstrap: [AppComponent]

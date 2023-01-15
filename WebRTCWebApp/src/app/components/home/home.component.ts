@@ -10,6 +10,8 @@ import { SignalrService } from 'src/app/services/signalr.service';
 export class HomeComponent implements OnInit {
 
   room: string;
+  mode: string = 'peer-to-peer';
+  modes: string[] = ['peer-to-peer', 'mesh conference call'];
 
   constructor(
     private router: Router,
@@ -29,6 +31,16 @@ export class HomeComponent implements OnInit {
   }
 
   startSessionCall(): void {
-    this.router.navigate(['session-call/' + this.room]);
+    switch(this.mode) {
+      case 'peer-to-peer':
+        this.router.navigate(['session-call/' + this.room]);
+        break;
+      case 'mesh conference call':
+        this.router.navigate(['session-call/mesh/' + this.room]);
+        break;
+      default:
+        break;
+    }
+
   }
 }

@@ -190,7 +190,8 @@ export class SessionCallComponent implements OnInit, OnDestroy, MessageSender {
   sendAnswer(): void {
     console.log('Sending answer to peer.');
     this.addTransceivers();
-    this.peerConnection.createAnswer().then((sdp: RTCSessionDescription) => {
+    this.peerConnection.createAnswer()
+    .then((sdp: RTCSessionDescription) => {
       this.peerConnection.setLocalDescription(sdp);
       this.sendMessage(sdp);
     });
@@ -215,7 +216,7 @@ export class SessionCallComponent implements OnInit, OnDestroy, MessageSender {
     });
   }
 
-  sendMessage(message): void {
+  sendMessage(message: any): void {
     this.signaling.invoke('SendMessage', message, this.room);
   }
 
