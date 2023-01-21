@@ -17,6 +17,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { SessionCallMeshComponent } from './components/session-call-mesh/session-call-mesh.component';
 import { MatSelectModule } from '@angular/material/select';
+import { SessionCallStarComponent } from './components/session-call-star/session-call-star.component';
 
 
 @NgModule({
@@ -24,7 +25,8 @@ import { MatSelectModule } from '@angular/material/select';
     AppComponent,
     HomeComponent,
     SessionCallComponent,
-    SessionCallMeshComponent
+    SessionCallMeshComponent,
+    SessionCallStarComponent
   ],
   imports: [
     BrowserModule,

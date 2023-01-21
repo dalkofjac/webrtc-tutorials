@@ -6,10 +6,9 @@ using System.Threading.Tasks;
 
 namespace SignalingServer.Hubs
 {
-    [Authorize]
-    public class MeshSignalingHub : Hub
+    public class StarSignalingHub : Hub
     {
-        private static readonly Dictionary<string, List<string>> ConnectedClients = new();
+        private static readonly Dictionary<string, List<HubClient>> ConnectedClients = new();
 
         public async Task SendMessage(object message, string roomName, string receiver = null)
         {
@@ -20,7 +19,7 @@ namespace SignalingServer.Hubs
                     await EmitLog("Client " + Context.ConnectionId + " sent a message to the whole room: " + message, roomName);
                     await Clients.OthersInGroup(roomName).SendAsync("message", message, Context.ConnectionId);
                 }
-                else 
+                else
                 {
                     await EmitLog("Client " + Context.ConnectionId + " sent a message to the client " + receiver + ": " + message, roomName);
                     await Clients.Client(receiver).SendAsync("message", message, Context.ConnectionId);
@@ -28,29 +27,36 @@ namespace SignalingServer.Hubs
             }
         }
 
-        public async Task<List<string>> CreateOrJoinRoom(string roomName)
+        public async Task<List<HubClient>> CreateOrJoinRoom(string roomName, string clientType)
         {
-            await EmitLog("Received request to create or join room " + roomName + " from a client " + Context.ConnectionId, roomName);
+            await EmitLog("Received request to create or join room " + roomName + " from a client " + Context.ConnectionId + " of type " + clientType, roomName);
+
+            if (clientType == HubClientType.CentralUnit && ConnectedClients.ContainsKey(roomName)
+                && ConnectedClients[roomName].Where(c => c.Type == HubClientType.CentralUnit).FirstOrDefault() != null) 
+            {
+                await EmitFull();
+                return null;
+            }
 
             if (!ConnectedClients.ContainsKey(roomName))
             {
-                ConnectedClients.Add(roomName, new List<string>());
+                ConnectedClients.Add(roomName, new List<HubClient>());
             }
 
             if (!IsClientInRoom(roomName))
             {
-                ConnectedClients[roomName].Add(Context.ConnectionId);
+                ConnectedClients[roomName].Add(new HubClient(Context.ConnectionId, clientType));
             }
 
             await Groups.AddToGroupAsync(Context.ConnectionId, roomName);
 
-            await EmitJoined(roomName);
-            await EmitLog("Client " + Context.ConnectionId + " joined the room " + roomName, roomName);
+            await EmitJoined(roomName, clientType);
+            await EmitLog("Client " + Context.ConnectionId + " of type " + clientType + " joined the room " + roomName, roomName);
 
             var numberOfClients = ConnectedClients[roomName].Count;
             await EmitLog("Room " + roomName + " now has " + numberOfClients + " client(s)", roomName);
 
-            var othersInRoom = ConnectedClients[roomName].Where(c => !c.Equals(Context.ConnectionId)).ToList();
+            var othersInRoom = ConnectedClients[roomName].Where(c => c.Id != Context.ConnectionId).ToList();
             return othersInRoom;
         }
 
@@ -60,8 +66,9 @@ namespace SignalingServer.Hubs
 
             if (IsClientInRoom(roomName))
             {
-                ConnectedClients[roomName].Remove(Context.ConnectionId);
-                await EmitLog("Client " + Context.ConnectionId + " left the room " + roomName, roomName);
+                var clientToRemove = ConnectedClients[roomName].Where(c => c.Id == Context.ConnectionId).FirstOrDefault();
+                ConnectedClients[roomName].Remove(clientToRemove);
+                await EmitLog("Client " + Context.ConnectionId + " of type " + clientToRemove.Type + " left the room " + roomName, roomName);
 
                 if (ConnectedClients[roomName].Count == 0)
                 {
@@ -73,9 +80,14 @@ namespace SignalingServer.Hubs
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomName);
         }
 
-        private async Task EmitJoined(string roomName)
+        private async Task EmitJoined(string roomName, string clientType)
         {
-            await Clients.OthersInGroup(roomName).SendAsync("joined", Context.ConnectionId);
+            await Clients.OthersInGroup(roomName).SendAsync("joined", Context.ConnectionId, clientType);
+        }
+
+        private async Task EmitFull()
+        {
+            await Clients.Caller.SendAsync("full");
         }
 
         private async Task EmitLog(string message, string roomName)
@@ -83,9 +95,9 @@ namespace SignalingServer.Hubs
             await Clients.Group(roomName).SendAsync("log", "[Server]: " + message);
         }
 
-        private bool IsClientInRoom(string roomName) 
+        private bool IsClientInRoom(string roomName)
         {
-            return ConnectedClients.ContainsKey(roomName) && ConnectedClients[roomName].Contains(Context.ConnectionId);
+            return ConnectedClients.ContainsKey(roomName) && ConnectedClients[roomName].Where(c => c.Id == Context.ConnectionId).FirstOrDefault() != null;
         }
     }
 }

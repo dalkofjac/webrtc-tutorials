@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { WebRTCClientType } from 'src/app/models/webrtc-client';
 import { SignalrService } from 'src/app/services/signalr.service';
 
 @Component({
@@ -11,7 +12,10 @@ export class HomeComponent implements OnInit {
 
   room: string;
   mode: string = 'peer-to-peer';
-  modes: string[] = ['peer-to-peer', 'mesh conference call'];
+  clientType: WebRTCClientType = WebRTCClientType.centralUnit;
+
+  modes: string[] = ['peer-to-peer', 'mesh conference call', 'star conference call'];
+  clientTypes: WebRTCClientType[] = [WebRTCClientType.centralUnit, WebRTCClientType.sideUnit];
 
   constructor(
     private router: Router,
@@ -37,6 +41,9 @@ export class HomeComponent implements OnInit {
         break;
       case 'mesh conference call':
         this.router.navigate(['session-call/mesh/' + this.room]);
+        break;
+      case 'star conference call':
+        this.router.navigate(['session-call/star/' + this.room + '/' + this.clientType]);
         break;
       default:
         break;

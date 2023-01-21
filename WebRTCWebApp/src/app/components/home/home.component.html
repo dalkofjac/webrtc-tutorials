@@ -33,6 +33,15 @@
         </mat-select>
       </mat-form-field>
     </div>
+
+    <div class="form-field-div" *ngIf="mode === 'star conference call'">
+      <mat-form-field class="form-field-select" appearance="fill">
+        <mat-label>Client type</mat-label>
+        <mat-select [(ngModel)]="clientType" name="clientType">
+          <mat-option *ngFor="let item of clientTypes" [value]="item">{{item}}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
     
     <div class="buttons">
       <button class="send-button" mat-raised-button color="primary" (click)="startSessionCall()" [disabled]="roomName.errors">

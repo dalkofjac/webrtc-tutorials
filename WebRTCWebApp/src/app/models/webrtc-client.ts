@@ -1,5 +1,10 @@
 import { environment } from "src/environments/environment";
 
+export enum WebRTCClientType {
+  centralUnit = 'central_unit',
+  sideUnit = 'side_unit'
+}
+
 export class WebRTCClient {
 
   private stream: MediaStream;
@@ -8,6 +13,7 @@ export class WebRTCClient {
 
   constructor(
     private clientId: string,
+    private clientType: WebRTCClientType | null,
     private isInitiator: boolean,
     private sendMessageCallback: (message: any) => void,
     private notifyUserCallback: (message: string) => void,
@@ -20,6 +26,10 @@ export class WebRTCClient {
     return this.clientId;
   }
 
+  getClientType() {
+    return this.clientType;
+  }
+
   getIsInitiator() {
     return this.isInitiator;
   }
@@ -29,7 +39,7 @@ export class WebRTCClient {
   }
 
   initiateCall(): void {
-    console.log('Initiating a call.', this.clientId);
+    console.log('Initiating a call.', this.clientId, this.clientType);
     if (!this.isStarted && this.localStreamCallback()) {
       this.createPeerConnection();
 
@@ -45,7 +55,7 @@ export class WebRTCClient {
   }
 
   createPeerConnection(): void {
-    console.log('Creating peer connection.', this.clientId);
+    console.log('Creating peer connection.', this.clientId, this.clientType);
     try {
       this.peerConnection = new RTCPeerConnection({
         iceServers: environment.iceServers,
@@ -56,7 +66,7 @@ export class WebRTCClient {
         if (event.candidate) {
           this.sendIceCandidate(event);
         } else {
-          console.log('End of candidates.', this.clientId);
+          console.log('End of candidates.', this.clientId, this.clientType);
         }
       };
 
@@ -66,13 +76,13 @@ export class WebRTCClient {
         }
       };
     } catch (e) {
-      console.log('Failed to create PeerConnection.', this.clientId, e.message);
+      console.log('Failed to create PeerConnection.', this.clientId, this.clientType, e.message);
       return;
     }
   }
 
   sendOffer(): void {
-    console.log('Sending offer to peer.', this.clientId);
+    console.log('Sending offer to peer.', this.clientId, this.clientType);
     this.addTransceivers();
     this.peerConnection.createOffer()
     .then((sdp: RTCSessionDescriptionInit) => {
@@ -82,7 +92,7 @@ export class WebRTCClient {
   }
 
   sendAnswer(): void {
-    console.log('Sending answer to peer.', this.clientId);
+    console.log('Sending answer to peer.', this.clientId, this.clientType);
     this.addTransceivers();
     this.peerConnection.createAnswer()
     .then((sdp: RTCSessionDescription) => {
@@ -92,7 +102,7 @@ export class WebRTCClient {
   }
 
   addIceCandidate(message: any): void {
-    console.log('Adding ice candidate.', this.clientId);
+    console.log('Adding ice candidate.', this.clientId, this.clientType);
     const candidate = new RTCIceCandidate({
       sdpMLineIndex: message.label,
       candidate: message.candidate
@@ -101,7 +111,7 @@ export class WebRTCClient {
   }
 
   sendIceCandidate(event: RTCPeerConnectionIceEvent): void {
-    console.log('Sending ice candidate to remote peer.', this.clientId);
+    console.log('Sending ice candidate to remote peer.', this.clientId, this.clientType);
     this.sendMessageCallback({
       type: 'candidate',
       label: event.candidate.sdpMLineIndex,
@@ -111,32 +121,32 @@ export class WebRTCClient {
   }
 
   addTransceivers(): void {
-    console.log('Adding transceivers.', this.clientId);
+    console.log('Adding transceivers.', this.clientId, this.clientType);
     const init = { direction: 'recvonly', streams: [], sendEncodings: [] } as RTCRtpTransceiverInit;
     this.peerConnection.addTransceiver('audio', init);
     this.peerConnection.addTransceiver('video', init);
   }
 
   addRemoteStream(stream: MediaStream): void {
-    console.log('Remote stream added.', this.clientId);
+    console.log('Remote stream added.', this.clientId, this.clientType);
     this.stream = stream;
     this.onStreamCallback(this.stream);
   }
 
   setRemoteDescription(message: any) {
-    console.log('Setting remote description.', this.clientId);
+    console.log('Setting remote description.', this.clientId, this.clientType);
     this.peerConnection.setRemoteDescription(new RTCSessionDescription(message));
   }
 
   handleRemoteHangup(): void {
-    console.log('Session terminated by remote peer.', this.clientId);
+    console.log('Session terminated by remote peer.', this.clientId, this.clientType);
     this.stopPeerConnection();
     this.onHangupCallback();
-    this.notifyUserCallback('Remote client' + this.clientId + ' has left the call.');
+    this.notifyUserCallback('Remote client' + this.clientId + ' of type' + this.clientType + ' has left the call.');
   }
 
   stopPeerConnection(): void {
-    console.log('Stopping peer connection.', this.clientId);
+    console.log('Stopping peer connection.', this.clientId, this.clientType);
     this.isStarted = false;
     if (this.peerConnection) {
       this.peerConnection.close();

@@ -50,7 +50,9 @@ namespace SignalingServer
                 {
                     OnMessageReceived = context =>
                     {
-                        if ((context.Request.Path.Value.StartsWith("/hubs/signaling") || context.Request.Path.Value.StartsWith("/hubs/mesh-signaling"))
+                        if ((context.Request.Path.Value.StartsWith("/hubs/signaling") 
+                            || context.Request.Path.Value.StartsWith("/hubs/mesh-signaling")
+                            || context.Request.Path.Value.StartsWith("/hubs/star-signaling"))
                             && (context.Request.Query.ContainsKey("access_token")))
                         {
                             context.Token = context.Request.Query["access_token"];
@@ -89,6 +91,7 @@ namespace SignalingServer
                 endpoints.MapHub<AuthHub>("/hubs/auth");
                 endpoints.MapHub<SignalingHub>("/hubs/signaling");
                 endpoints.MapHub<MeshSignalingHub>("/hubs/mesh-signaling");
+                endpoints.MapHub<StarSignalingHub>("/hubs/star-signaling");
             });
         }
     }

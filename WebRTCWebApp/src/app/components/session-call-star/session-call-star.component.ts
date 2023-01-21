@@ -1,20 +1,22 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute } from '@angular/router';
-import { WebRTCClient } from 'src/app/models/webrtc-client';
+import { HubClient } from 'src/app/models/hub-client';
+import { WebRTCClient, WebRTCClientType } from 'src/app/models/webrtc-client';
 import { SignalrService } from 'src/app/services/signalr.service';
 
 @Component({
-  selector: 'app-session-call-mesh',
-  templateUrl: './session-call-mesh.component.html',
-  styleUrls: ['./session-call-mesh.component.scss']
+  selector: 'app-session-call-star',
+  templateUrl: './session-call-star.component.html',
+  styleUrls: ['./session-call-star.component.scss']
 })
-export class SessionCallMeshComponent implements OnInit, OnDestroy {
+export class SessionCallStarComponent implements OnInit, OnDestroy  {
 
   @ViewChild('localVideo') localVideo: ElementRef;
 
   localStream: MediaStream;
   room: string;
+  clientType: WebRTCClientType;
   clients: WebRTCClient[] = [];
 
   constructor(
@@ -24,6 +26,7 @@ export class SessionCallMeshComponent implements OnInit, OnDestroy {
   ) {
     this.route.paramMap.subscribe(async param => {
       this.room = param['params']['room'];
+      this.clientType = param['params']['client-type'];
     });
   }
 
@@ -33,12 +36,18 @@ export class SessionCallMeshComponent implements OnInit, OnDestroy {
 
   async start(): Promise<void> {
     // #1 connect to signaling server
-    this.signaling.connect('/mesh-signaling', true).then(async () => {
+    this.signaling.connect('/star-signaling', true).then(async () => {
       if (this.signaling.isConnected()) {
-        const otherClientsInRoom = (await this.signaling.invoke('CreateOrJoinRoom', this.room)) as string[];
-        otherClientsInRoom.forEach(client => {
-          this.tryCreateClient(client, false);
-        });
+        const otherClientsInRoom = (await this.signaling.invoke('CreateOrJoinRoom', this.room, this.clientType)) as HubClient[];
+        if (this.clientType === WebRTCClientType.centralUnit) {
+          otherClientsInRoom.forEach(client => {
+            this.tryCreateClient(client.id, client.type, false);
+          });
+        } else {
+          const centralUnit = otherClientsInRoom.filter(c => c.type === WebRTCClientType.centralUnit)[0];
+          this.tryCreateClient(centralUnit.id, centralUnit.type, false);
+        }
+
       }
     });
 
@@ -54,13 +63,23 @@ export class SessionCallMeshComponent implements OnInit, OnDestroy {
       console.log(message);
     });
 
-    this.signaling.define('joined', (clientId: string) => {
-      this.tryCreateClient(clientId, true);
+    this.signaling.define('full', () => {
+      this.snack.open('The room already has a central unit!', 'Dismiss', { duration: 5000 })
+    });
+
+    this.signaling.define('joined', (clientId: string, clientType: WebRTCClientType) => {
+      if (!(this.clientType === WebRTCClientType.sideUnit && clientType === WebRTCClientType.sideUnit)) {
+        this.tryCreateClient(clientId, clientType, true);
+      }
     });
 
     this.signaling.define('message', (message: any, clientId: string) => {
       const client = this.findClient(clientId);
       if (client) {
+        if (this.clientType === WebRTCClientType.sideUnit && client.getClientType() === WebRTCClientType.sideUnit) {
+          return;
+        }
+
         if (message === 'got user media') {
           client.initiateCall();
   
@@ -107,9 +126,9 @@ export class SessionCallMeshComponent implements OnInit, OnDestroy {
     return this.clients?.filter(c => c.getClientId() === clientId)[0];
   }
 
-  tryCreateClient(clientId: string, initiator: boolean): void {
+  tryCreateClient(clientId: string, clientType: WebRTCClientType, initiator: boolean): void {
     if (!this.findClient(clientId)) {
-      const client = new WebRTCClient(clientId, null, initiator,
+      const client = new WebRTCClient(clientId, clientType, initiator,
         (message: any) => this.sendMessage(message, clientId),
         (message: string) => this.snack.open(message, 'Dismiss', { duration: 5000 }),
         (remoteStream: MediaStream) => this.addRemoteStream(clientId, remoteStream),
@@ -177,4 +196,5 @@ export class SessionCallMeshComponent implements OnInit, OnDestroy {
       this.localStream.getTracks().forEach((track) => { track.stop(); });
     }
   }
+
 }
