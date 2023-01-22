@@ -137,25 +137,27 @@ export class SessionCallMeshComponent implements OnInit, OnDestroy {
   }
 
   addRemoteStream(clientId: string, stream: MediaStream): void {
-    console.log('Remote stream added.');
     const videoElementId = "remoteVideo-" + clientId;
-    if (!document.getElementById(videoElementId)) {
+    this.createVideoElement(videoElementId, stream);
+  }
+
+  removeRemoteStream(clientId: string): void {
+    const videoElement = document.getElementById("remoteVideo-" + clientId)
+    if (videoElement) {
+      videoElement.parentNode.removeChild(videoElement);
+    }
+  }
+
+  createVideoElement(id: string, stream: MediaStream) {
+    if (!document.getElementById(id)) {
       const videosDiv = document.getElementById('all-videos');
       const remoteVideo = document.createElement('video');
-      remoteVideo.id = videoElementId;
+      remoteVideo.id = id;
       remoteVideo.srcObject = stream;
       remoteVideo.autoplay = true;
       remoteVideo.controls = true;
       remoteVideo.muted = true;
       videosDiv.appendChild(remoteVideo);
-    }
-  }
-
-  removeRemoteStream(clientId: string): void {
-    console.log('Remote stream removed.');
-    const videoElement = document.getElementById("remoteVideo-" + clientId)
-    if (videoElement) {
-      videoElement.parentNode.removeChild(videoElement);
     }
   }
 

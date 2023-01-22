@@ -3,6 +3,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute } from '@angular/router';
 import { WebRTCClient } from 'src/app/models/webrtc-client';
 import { SignalrService } from 'src/app/services/signalr.service';
+import { Location } from '@angular/common';
 
 export enum WebRTCClientType {
   centralUnit = 'central_unit',
@@ -19,6 +20,7 @@ export class SessionCallStarComponent implements OnInit, OnDestroy  {
   @ViewChild('localVideo') localVideo: ElementRef;
 
   localStream: MediaStream;
+  remoteStreams: MediaStream[] = [];
   room: string;
   clientType: WebRTCClientType;
   clients: WebRTCClient[] = [];
@@ -26,6 +28,7 @@ export class SessionCallStarComponent implements OnInit, OnDestroy  {
   constructor(
     private snack: MatSnackBar,
     private route: ActivatedRoute,
+    private location: Location,
     private signaling: SignalrService
   ) {
     this.route.paramMap.subscribe(async param => {
@@ -62,7 +65,8 @@ export class SessionCallStarComponent implements OnInit, OnDestroy  {
     });
 
     this.signaling.define('full', () => {
-      this.snack.open('The room already has a central unit!', 'Dismiss', { duration: 5000 })
+      this.snack.open('The room ' + this.room + ' already has a central unit!', 'Dismiss', { duration: 5000 })
+      this.location.back();
     });
 
     this.signaling.define('joined', (clientId: string) => {
@@ -87,7 +91,14 @@ export class SessionCallStarComponent implements OnInit, OnDestroy  {
   
         } else if (message.type === 'candidate' && client.getIsStarted()) {
           client.addIceCandidate(message);
-  
+        
+        } else if (message.type === 'streams removed' && client.getIsStarted()) {
+          const streamIds = message.streams;
+          streamIds.forEach((streamId: string) => {
+            client.removeRemoteStream(streamId);
+          });
+          this.removeRemoteStreams(client.getClientId(), streamIds);
+
         } else if (message === 'bye' && client.getIsStarted()) {
           client.handleRemoteHangup();
         }
@@ -125,15 +136,17 @@ export class SessionCallStarComponent implements OnInit, OnDestroy  {
         (message: string) => this.snack.open(message, 'Dismiss', { duration: 5000 }),
         (remoteStream: MediaStream) => this.addRemoteStream(clientId, remoteStream),
         () => this.removeClient(clientId),
-        () => { return this.localStream });
+        () => { return this.localStream },
+        () => { return this.remoteStreams });
 
       this.clients.push(client);
     }
   }
 
   removeClient(clientId: string): void {
-    this.clients = this.clients.filter(c => c.getClientId() !== clientId);
-    this.removeRemoteStream(clientId);
+    const clientToRemove = this.clients.find(c => c.getClientId() === clientId);
+    this.clients = this.clients.filter(c => c !== clientToRemove);
+    this.removeRemoteStreams(clientId, clientToRemove.getStreams().map(s => s.id));
   }
 
   sendMessage(message: any, client: string = null): void {
@@ -148,25 +161,51 @@ export class SessionCallStarComponent implements OnInit, OnDestroy  {
   }
 
   addRemoteStream(clientId: string, stream: MediaStream): void {
-    console.log('Remote stream added.');
-    const videoElementId = "remoteVideo-" + clientId;
-    if (!document.getElementById(videoElementId)) {
+    if (!this.remoteStreams.find(s => s.id === stream.id)) {
+      this.remoteStreams.push(stream);
+      if (this.clientType === WebRTCClientType.centralUnit) {
+        this.clients.forEach(client => {
+          if (clientId != client.getClientId()) {
+            client.addRemoteTracks(stream);
+          }
+        });
+      }
+      const videoElementId = "remoteVideo-" + clientId + stream.id;
+      this.createVideoElement(videoElementId, stream);
+    }
+  }
+
+  removeRemoteStreams(clientId: string, streamIds: string[]): void {
+    this.remoteStreams = this.remoteStreams.filter(s => !streamIds.find(i => i === s.id));
+    streamIds.forEach(streamId => {
+      const videoElement = document.getElementById("remoteVideo-" + clientId + streamId)
+      if (videoElement) {
+        videoElement.parentNode.removeChild(videoElement);
+      }
+    });
+    if (this.clientType === WebRTCClientType.centralUnit) {
+      this.clients.forEach(client => {
+        if (client.getClientId() !== clientId) {
+          const message = {
+            type: 'streams removed',
+            streams: streamIds
+          };
+          this.sendMessage(message, client.getClientId());
+        }
+      });
+    }
+  }
+  
+  createVideoElement(id: string, stream: MediaStream) {
+    if (!document.getElementById(id)) {
       const videosDiv = document.getElementById('all-videos');
       const remoteVideo = document.createElement('video');
-      remoteVideo.id = videoElementId;
+      remoteVideo.id = id;
       remoteVideo.srcObject = stream;
       remoteVideo.autoplay = true;
       remoteVideo.controls = true;
       remoteVideo.muted = true;
       videosDiv.appendChild(remoteVideo);
-    }
-  }
-
-  removeRemoteStream(clientId: string): void {
-    console.log('Remote stream removed.');
-    const videoElement = document.getElementById("remoteVideo-" + clientId)
-    if (videoElement) {
-      videoElement.parentNode.removeChild(videoElement);
     }
   }
 

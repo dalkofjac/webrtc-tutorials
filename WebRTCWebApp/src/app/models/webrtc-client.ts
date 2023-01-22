@@ -2,7 +2,7 @@ import { environment } from "src/environments/environment";
 
 export class WebRTCClient {
 
-  private stream: MediaStream;
+  private streams: MediaStream[] = [];
   private peerConnection: RTCPeerConnection;
   private isStarted: boolean = false;
 
@@ -13,19 +13,24 @@ export class WebRTCClient {
     private notifyUserCallback: (message: string) => void,
     private onStreamCallback: (stream: MediaStream) => void,
     private onHangupCallback: () => void,
-    private localStreamCallback: () => MediaStream) {
+    private localStreamCallback: () => MediaStream,
+    private remoteStreamsCallback: () => MediaStream[] = () => { return null; }) {
   }
 
-  getClientId() {
+  getClientId(): string {
     return this.clientId;
   }
 
-  getIsInitiator() {
+  getIsInitiator(): boolean {
     return this.isInitiator;
   }
 
-  getIsStarted() {
+  getIsStarted(): boolean {
     return this.isStarted;
+  }
+
+  getStreams(): MediaStream[] {
+    return this.streams;
   }
 
   initiateCall(): void {
@@ -36,6 +41,11 @@ export class WebRTCClient {
       const localStream = this.localStreamCallback();
       this.peerConnection.addTrack(localStream.getVideoTracks()[0], localStream);
       this.peerConnection.addTrack(localStream.getAudioTracks()[0], localStream);
+
+      this.remoteStreamsCallback()?.forEach(stream => {
+        this.peerConnection.addTrack(stream.getVideoTracks()[0], stream);
+        this.peerConnection.addTrack(stream.getAudioTracks()[0], stream);
+      });
 
       this.isStarted = true;
       if (this.isInitiator) {
@@ -109,6 +119,11 @@ export class WebRTCClient {
       candidate: event.candidate.candidate
     });
   }
+  
+  setRemoteDescription(message: any) {
+    console.log('Setting remote description.', this.clientId);
+    this.peerConnection.setRemoteDescription(new RTCSessionDescription(message));
+  }
 
   addTransceivers(): void {
     console.log('Adding transceivers.', this.clientId);
@@ -118,14 +133,25 @@ export class WebRTCClient {
   }
 
   addRemoteStream(stream: MediaStream): void {
-    console.log('Remote stream added.', this.clientId);
-    this.stream = stream;
-    this.onStreamCallback(this.stream);
+    console.log('Adding remote stream.', this.clientId);
+    if (!this.streams.find(s => s.id === stream.id)) {
+      this.streams.push(stream);
+      this.onStreamCallback(stream);
+    }
   }
 
-  setRemoteDescription(message: any) {
-    console.log('Setting remote description.', this.clientId);
-    this.peerConnection.setRemoteDescription(new RTCSessionDescription(message));
+  addRemoteTracks(stream: MediaStream): void {
+    console.log('Adding remote tracks.', this.clientId);
+    this.peerConnection.addTrack(stream.getVideoTracks()[0], stream);
+    this.peerConnection.addTrack(stream.getAudioTracks()[0], stream);
+    this.sendOffer();
+  }
+
+  removeRemoteStream(streamId: string): void {
+    console.log('Removing remote stream.', this.clientId);
+    const streamToRemove = this.streams.find(s => s.id === streamId);
+    this.streams = this.streams.filter(s => s !== streamToRemove);
+    streamToRemove.getTracks().forEach((track) => { track.stop(); });
   }
 
   handleRemoteHangup(): void {
@@ -142,8 +168,10 @@ export class WebRTCClient {
       this.peerConnection.close();
       this.peerConnection = null;
     }
-    if (this.stream && this.stream.active) {
-      this.stream.getTracks().forEach((track) => { track.stop(); });
-    }
+    this.streams.forEach(stream => {
+      if (stream && stream.active) {
+        stream.getTracks().forEach((track) => { track.stop(); });
+      }
+    });
   }
 }
