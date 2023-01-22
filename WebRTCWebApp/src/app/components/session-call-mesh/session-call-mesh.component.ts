@@ -109,7 +109,7 @@ export class SessionCallMeshComponent implements OnInit, OnDestroy {
 
   tryCreateClient(clientId: string, initiator: boolean): void {
     if (!this.findClient(clientId)) {
-      const client = new WebRTCClient(clientId, null, initiator,
+      const client = new WebRTCClient(clientId, initiator,
         (message: any) => this.sendMessage(message, clientId),
         (message: string) => this.snack.open(message, 'Dismiss', { duration: 5000 }),
         (remoteStream: MediaStream) => this.addRemoteStream(clientId, remoteStream),

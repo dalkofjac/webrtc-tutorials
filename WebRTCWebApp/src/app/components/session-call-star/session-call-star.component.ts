@@ -1,9 +1,13 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute } from '@angular/router';
-import { HubClient } from 'src/app/models/hub-client';
-import { WebRTCClient, WebRTCClientType } from 'src/app/models/webrtc-client';
+import { WebRTCClient } from 'src/app/models/webrtc-client';
 import { SignalrService } from 'src/app/services/signalr.service';
+
+export enum WebRTCClientType {
+  centralUnit = 'central_unit',
+  sideUnit = 'side_unit'
+}
 
 @Component({
   selector: 'app-session-call-star',
@@ -38,16 +42,10 @@ export class SessionCallStarComponent implements OnInit, OnDestroy  {
     // #1 connect to signaling server
     this.signaling.connect('/star-signaling', true).then(async () => {
       if (this.signaling.isConnected()) {
-        const otherClientsInRoom = (await this.signaling.invoke('CreateOrJoinRoom', this.room, this.clientType)) as HubClient[];
-        if (this.clientType === WebRTCClientType.centralUnit) {
-          otherClientsInRoom.forEach(client => {
-            this.tryCreateClient(client.id, client.type, false);
-          });
-        } else {
-          const centralUnit = otherClientsInRoom.filter(c => c.type === WebRTCClientType.centralUnit)[0];
-          this.tryCreateClient(centralUnit.id, centralUnit.type, false);
-        }
-
+        const otherClientsInRoom = (await this.signaling.invoke('CreateOrJoinRoom', this.room, this.clientType)) as string[];
+        otherClientsInRoom.forEach(client => {
+          this.tryCreateClient(client, false);
+        });
       }
     });
 
@@ -67,19 +65,13 @@ export class SessionCallStarComponent implements OnInit, OnDestroy  {
       this.snack.open('The room already has a central unit!', 'Dismiss', { duration: 5000 })
     });
 
-    this.signaling.define('joined', (clientId: string, clientType: WebRTCClientType) => {
-      if (!(this.clientType === WebRTCClientType.sideUnit && clientType === WebRTCClientType.sideUnit)) {
-        this.tryCreateClient(clientId, clientType, true);
-      }
+    this.signaling.define('joined', (clientId: string) => {
+      this.tryCreateClient(clientId, true);
     });
 
     this.signaling.define('message', (message: any, clientId: string) => {
       const client = this.findClient(clientId);
       if (client) {
-        if (this.clientType === WebRTCClientType.sideUnit && client.getClientType() === WebRTCClientType.sideUnit) {
-          return;
-        }
-
         if (message === 'got user media') {
           client.initiateCall();
   
@@ -126,9 +118,9 @@ export class SessionCallStarComponent implements OnInit, OnDestroy  {
     return this.clients?.filter(c => c.getClientId() === clientId)[0];
   }
 
-  tryCreateClient(clientId: string, clientType: WebRTCClientType, initiator: boolean): void {
+  tryCreateClient(clientId: string, initiator: boolean): void {
     if (!this.findClient(clientId)) {
-      const client = new WebRTCClient(clientId, clientType, initiator,
+      const client = new WebRTCClient(clientId, initiator,
         (message: any) => this.sendMessage(message, clientId),
         (message: string) => this.snack.open(message, 'Dismiss', { duration: 5000 }),
         (remoteStream: MediaStream) => this.addRemoteStream(clientId, remoteStream),
@@ -196,5 +188,4 @@ export class SessionCallStarComponent implements OnInit, OnDestroy  {
       this.localStream.getTracks().forEach((track) => { track.stop(); });
     }
   }
-
 }

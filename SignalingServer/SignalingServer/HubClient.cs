@@ -1,4 +1,6 @@
-﻿namespace SignalingServer
+﻿using System.Collections.Generic;
+
+namespace SignalingServer
 {
     public class HubClient
     {
@@ -18,5 +20,7 @@
         public static readonly string CentralUnit = "central_unit";
 
         public static readonly string SideUnit = "side_unit";
+
+        public static readonly List<string> AllTypes = new() { CentralUnit, SideUnit };
     }
 }

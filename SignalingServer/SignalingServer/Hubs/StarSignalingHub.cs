@@ -27,7 +27,7 @@ namespace SignalingServer.Hubs
             }
         }
 
-        public async Task<List<HubClient>> CreateOrJoinRoom(string roomName, string clientType)
+        public async Task<List<string>> CreateOrJoinRoom(string roomName, string clientType)
         {
             await EmitLog("Received request to create or join room " + roomName + " from a client " + Context.ConnectionId + " of type " + clientType, roomName);
 
@@ -56,8 +56,7 @@ namespace SignalingServer.Hubs
             var numberOfClients = ConnectedClients[roomName].Count;
             await EmitLog("Room " + roomName + " now has " + numberOfClients + " client(s)", roomName);
 
-            var othersInRoom = ConnectedClients[roomName].Where(c => c.Id != Context.ConnectionId).ToList();
-            return othersInRoom;
+            return GetOppositeTypeHubClients(roomName, clientType);
         }
 
         public async Task LeaveRoom(string roomName)
@@ -82,7 +81,7 @@ namespace SignalingServer.Hubs
 
         private async Task EmitJoined(string roomName, string clientType)
         {
-            await Clients.OthersInGroup(roomName).SendAsync("joined", Context.ConnectionId, clientType);
+            await Clients.Clients(GetOppositeTypeHubClients(roomName, clientType)).SendAsync("joined", Context.ConnectionId);
         }
 
         private async Task EmitFull()
@@ -98,6 +97,11 @@ namespace SignalingServer.Hubs
         private bool IsClientInRoom(string roomName)
         {
             return ConnectedClients.ContainsKey(roomName) && ConnectedClients[roomName].Where(c => c.Id == Context.ConnectionId).FirstOrDefault() != null;
+        }
+
+        private List<string> GetOppositeTypeHubClients(string roomName, string clientType) 
+        { 
+            return ConnectedClients[roomName]?.Where(c => c.Type == HubClientType.AllTypes.FirstOrDefault(t => t != clientType))?.Select(c => c.Id).ToList();
         }
     }
 }

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { WebRTCClientType } from 'src/app/models/webrtc-client';
 import { SignalrService } from 'src/app/services/signalr.service';
+import { WebRTCClientType } from '../session-call-star/session-call-star.component';
 
 @Component({
   selector: 'app-home',
