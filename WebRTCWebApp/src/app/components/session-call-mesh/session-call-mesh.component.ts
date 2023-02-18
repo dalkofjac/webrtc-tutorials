@@ -63,20 +63,20 @@ export class SessionCallMeshComponent implements OnInit, OnDestroy {
       if (client) {
         if (message === 'got user media') {
           client.initiateCall();
-  
+
         } else if (message.type === 'offer') {
           if (!client.getIsStarted()) {
             client.initiateCall();
           }
           client.setRemoteDescription(message);
           client.sendAnswer();
-  
+
         } else if (message.type === 'answer' && client.getIsStarted()) {
           client.setRemoteDescription(message);
-  
+
         } else if (message.type === 'candidate' && client.getIsStarted()) {
           client.addIceCandidate(message);
-  
+
         } else if (message === 'bye' && client.getIsStarted()) {
           client.handleRemoteHangup();
         }
@@ -114,7 +114,7 @@ export class SessionCallMeshComponent implements OnInit, OnDestroy {
         (message: string) => this.snack.open(message, 'Dismiss', { duration: 5000 }),
         (remoteStream: MediaStream) => this.addRemoteStream(clientId, remoteStream),
         () => this.removeClient(clientId),
-        () => { return this.localStream });
+        () => this.localStream);
 
       this.clients.push(client);
     }
@@ -137,18 +137,18 @@ export class SessionCallMeshComponent implements OnInit, OnDestroy {
   }
 
   addRemoteStream(clientId: string, stream: MediaStream): void {
-    const videoElementId = "remoteVideo-" + clientId;
+    const videoElementId = 'remoteVideo-' + clientId;
     this.createVideoElement(videoElementId, stream);
   }
 
   removeRemoteStream(clientId: string): void {
-    const videoElement = document.getElementById("remoteVideo-" + clientId)
+    const videoElement = document.getElementById('remoteVideo-' + clientId);
     if (videoElement) {
       videoElement.parentNode.removeChild(videoElement);
     }
   }
 
-  createVideoElement(id: string, stream: MediaStream) {
+  createVideoElement(id: string, stream: MediaStream): void {
     if (!document.getElementById(id)) {
       const videosDiv = document.getElementById('all-videos');
       const remoteVideo = document.createElement('video');

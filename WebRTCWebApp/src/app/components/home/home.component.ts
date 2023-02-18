@@ -11,7 +11,7 @@ import { WebRTCClientType } from '../session-call-star/session-call-star.compone
 export class HomeComponent implements OnInit {
 
   room: string;
-  mode: string = 'peer-to-peer';
+  mode = 'peer-to-peer';
   clientType: WebRTCClientType = WebRTCClientType.centralUnit;
 
   modes: string[] = ['peer-to-peer', 'mesh conference call', 'star conference call'];
@@ -35,7 +35,7 @@ export class HomeComponent implements OnInit {
   }
 
   startSessionCall(): void {
-    switch(this.mode) {
+    switch (this.mode) {
       case 'peer-to-peer':
         this.router.navigate(['session-call/' + this.room]);
         break;

@@ -1,10 +1,10 @@
-import { environment } from "src/environments/environment";
+import { environment } from 'src/environments/environment';
 
 export class WebRTCClient {
 
   private streams: MediaStream[] = [];
   private peerConnection: RTCPeerConnection;
-  private isStarted: boolean = false;
+  private isStarted = false;
 
   constructor(
     private clientId: string,
@@ -14,7 +14,7 @@ export class WebRTCClient {
     private onStreamCallback: (stream: MediaStream) => void,
     private onHangupCallback: () => void,
     private localStreamCallback: () => MediaStream,
-    private remoteStreamsCallback: () => MediaStream[] = () => { return null; }) {
+    private remoteStreamsCallback: () => MediaStream[] = () => null) {
   }
 
   getClientId(): string {
@@ -119,8 +119,8 @@ export class WebRTCClient {
       candidate: event.candidate.candidate
     });
   }
-  
-  setRemoteDescription(message: any) {
+
+  setRemoteDescription(message: any): void {
     console.log('Setting remote description.', this.clientId);
     this.peerConnection.setRemoteDescription(new RTCSessionDescription(message));
   }
