@@ -64,7 +64,11 @@ namespace SignalingServer
                 };
             });
 
-            services.AddSignalR();
+            services.AddSignalR(o =>
+            {
+                o.EnableDetailedErrors = true;
+                o.MaximumReceiveMessageSize = 1000000;
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -33,7 +33,8 @@ signaling.connect('/auth').then(() => {
                     if (signaling.isConnected()) {
                         signaling.define('room created', (room) => {
                             if (!sessions.find(s => s.getRoom() === room)) {
-                                sessions.push(new webrtc_session_1.WebRTCSession(room, signaling));
+                                const newSession = new webrtc_session_1.WebRTCSession(room, signaling);
+                                sessions.push(newSession);
                             }
                         });
                     }
