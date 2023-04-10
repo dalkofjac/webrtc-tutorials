@@ -1,0 +1,14 @@
+<mat-toolbar color="primary">
+  <mat-toolbar-row>
+    <span><strong>WebRTC Webapp</strong></span>
+    <span class="main-spacer"></span>
+    <button mat-mini-fab color="accent" routerLink="">
+      <mat-icon>call_end</mat-icon>
+    </button>
+  </mat-toolbar-row>
+</mat-toolbar>
+<div class="content">
+  <div class="videos" id="all-videos">
+    <video #localVideo id="localVideo" autoplay controls></video>
+  </div>
+</div>

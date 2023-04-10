@@ -2,34 +2,31 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/co
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute } from '@angular/router';
 import { WebRTCClient } from 'src/app/models/webrtc-client';
-import { SignalrService } from 'src/app/services/signalr.service';
-import { Location } from '@angular/common';
 import { WebRTCClientType } from 'src/app/models/webrtc-client-type';
+import { SignalrService } from 'src/app/services/signalr.service';
 
 @Component({
-  selector: 'app-session-call-star',
-  templateUrl: './session-call-star.component.html',
-  styleUrls: ['./session-call-star.component.scss']
+  selector: 'app-session-call-sfu',
+  templateUrl: './session-call-sfu.component.html',
+  styleUrls: ['./session-call-sfu.component.scss']
 })
-export class SessionCallStarComponent implements OnInit, OnDestroy  {
+export class SessionCallSFUComponent implements OnInit, OnDestroy  {
 
   @ViewChild('localVideo') localVideo: ElementRef;
 
   localStream: MediaStream;
   remoteStreams: MediaStream[] = [];
   room: string;
-  clientType: WebRTCClientType;
   clients: WebRTCClient[] = [];
+  clientType = WebRTCClientType.SideUnit;
 
   constructor(
     private snack: MatSnackBar,
     private route: ActivatedRoute,
-    private location: Location,
     private signaling: SignalrService
   ) {
     this.route.paramMap.subscribe(async param => {
       this.room = param['params']['room'];
-      this.clientType = param['params']['client-type'];
     });
   }
 
@@ -39,7 +36,7 @@ export class SessionCallStarComponent implements OnInit, OnDestroy  {
 
   async start(): Promise<void> {
     // #1 connect to signaling server
-    this.signaling.connect('/star-signaling', true).then(async () => {
+    this.signaling.connect('/sfu-signaling', true).then(async () => {
       if (this.signaling.isConnected()) {
         const otherClientsInRoom = (await this.signaling.invoke('CreateOrJoinRoom', this.room, this.clientType)) as string[];
         otherClientsInRoom.forEach(client => {
@@ -58,11 +55,6 @@ export class SessionCallStarComponent implements OnInit, OnDestroy  {
   defineSignaling(): void {
     this.signaling.define('log', (message: any) => {
       console.log(message);
-    });
-
-    this.signaling.define('full', () => {
-      this.snack.open('The room ' + this.room + ' already has a central unit!', 'Dismiss', { duration: 5000 });
-      this.location.back();
     });
 
     this.signaling.define('joined', (clientId: string) => {
@@ -159,13 +151,6 @@ export class SessionCallStarComponent implements OnInit, OnDestroy  {
   addRemoteStream(clientId: string, stream: MediaStream): void {
     if (!this.remoteStreams.find(s => s.id === stream.id)) {
       this.remoteStreams.push(stream);
-      if (this.clientType === WebRTCClientType.CentralUnit) {
-        this.clients.forEach(client => {
-          if (clientId !== client.getClientId()) {
-            client.addRemoteTracks(stream);
-          }
-        });
-      }
       const videoElementId = 'remoteVideo-' + clientId + stream.id;
       this.createVideoElement(videoElementId, stream);
     }
@@ -179,17 +164,6 @@ export class SessionCallStarComponent implements OnInit, OnDestroy  {
         videoElement.parentNode.removeChild(videoElement);
       }
     });
-    if (this.clientType === WebRTCClientType.CentralUnit) {
-      this.clients.forEach(client => {
-        if (client.getClientId() !== clientId) {
-          const message = {
-            type: 'streams removed',
-            streams: streamIds
-          };
-          this.sendMessage(message, client.getClientId());
-        }
-      });
-    }
   }
 
   createVideoElement(id: string, stream: MediaStream): void {
@@ -223,4 +197,5 @@ export class SessionCallStarComponent implements OnInit, OnDestroy  {
       this.localStream.getTracks().forEach((track) => { track.stop(); });
     }
   }
+
 }
