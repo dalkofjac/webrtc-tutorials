@@ -123,7 +123,8 @@ class WebRTCClient {
     addRemoteTracks(stream) {
         console.log('Adding remote tracks.', this.clientId);
         this.peerConnection.addTrack(stream.getVideoTracks()[0], stream);
-        this.peerConnection.addTrack(stream.getAudioTracks()[0], stream);
+        // todo: uncomment later
+        // this.peerConnection.addTrack(stream.getAudioTracks()[0], stream);
         this.sendOffer();
     }
     removeRemoteStream(streamId) {

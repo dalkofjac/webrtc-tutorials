@@ -1,6 +1,7 @@
 import { SignalrService } from "../services/signalr.service";
 import { WebRTCClient } from "./webrtc-client";
 import { MediaStream } from 'wrtc';
+import { MultiStreamsMixer } from "./mixer";
 
 export enum WebRTCClientType {
   CentralUnit = 'central_unit',
@@ -11,6 +12,7 @@ export class WebRTCSession {
 
   remoteStreams: MediaStream[] = [];
   clients: WebRTCClient[] = [];
+  mixer: MultiStreamsMixer;
 
   constructor(
     private room: string,
@@ -95,11 +97,21 @@ export class WebRTCSession {
   addRemoteStream(clientId: string, stream: MediaStream): void {
     if (!this.remoteStreams.find(s => s.id === stream.id)) {
       this.remoteStreams.push(stream);
-      this.clients.forEach(client => {
-        if (clientId !== client.getClientId()) {
-          client.addRemoteTracks(stream);
+      if (this.remoteStreams.length == 2) {
+        this.mixer = new MultiStreamsMixer(this.remoteStreams);
+        this.mixer.appendStreams(this.remoteStreams);
+        this.mixer.startDrawingFrames();
+      }
+      setTimeout(() => {
+        if (this.mixer) {
+          this.clients.forEach(client => {
+            const remoteStream = this.mixer.getMixedStream();
+            if (remoteStream && remoteStream.getVideoTracks()) {
+              client.addRemoteTracks(remoteStream);
+            }
+          });
         }
-      });
+      }, 2000);
     }
   }
 

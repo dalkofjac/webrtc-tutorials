@@ -11,6 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WebRTCSession = exports.WebRTCClientType = void 0;
 const webrtc_client_1 = require("./webrtc-client");
+const mixer_1 = require("./mixer");
 var WebRTCClientType;
 (function (WebRTCClientType) {
     WebRTCClientType["CentralUnit"] = "central_unit";
@@ -91,11 +92,21 @@ class WebRTCSession {
     addRemoteStream(clientId, stream) {
         if (!this.remoteStreams.find(s => s.id === stream.id)) {
             this.remoteStreams.push(stream);
-            this.clients.forEach(client => {
-                if (clientId !== client.getClientId()) {
-                    client.addRemoteTracks(stream);
+            if (this.remoteStreams.length == 2) {
+                this.mixer = new mixer_1.MultiStreamsMixer(this.remoteStreams);
+                this.mixer.appendStreams(this.remoteStreams);
+                this.mixer.startDrawingFrames();
+            }
+            setTimeout(() => {
+                if (this.mixer) {
+                    this.clients.forEach(client => {
+                        const remoteStream = this.mixer.getMixedStream();
+                        if (remoteStream && remoteStream.getVideoTracks()) {
+                            client.addRemoteTracks(remoteStream);
+                        }
+                    });
                 }
-            });
+            }, 2000);
         }
     }
     removeRemoteStreams(clientId, streamIds) {
