@@ -97,16 +97,14 @@ class WebRTCSession {
                 this.mixer.appendStreams(this.remoteStreams);
                 this.mixer.startDrawingFrames();
             }
-            setTimeout(() => {
-                if (this.mixer) {
-                    this.clients.forEach(client => {
-                        const remoteStream = this.mixer.getMixedStream();
-                        if (remoteStream && remoteStream.getVideoTracks()) {
-                            client.addRemoteTracks(remoteStream);
-                        }
-                    });
-                }
-            }, 2000);
+            if (this.mixer) {
+                this.clients.forEach(client => {
+                    const remoteStream = this.mixer.getMixedStream();
+                    if (remoteStream && remoteStream.getVideoTracks()) {
+                        client.addRemoteTracks(remoteStream);
+                    }
+                });
+            }
         }
     }
     removeRemoteStreams(clientId, streamIds) {

@@ -3,13 +3,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MultiStreamsMixer = void 0;
+exports.MultiStreamsMixer = exports.VideoSinkSet = void 0;
 const wrtc_1 = require("wrtc");
 const canvas_1 = require("canvas");
 const jsdom_1 = __importDefault(require("jsdom"));
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { RTCVideoSource, RTCVideoSink, rgbaToI420, i420ToRgba } = require('wrtc').nonstandard;
 const { JSDOM } = jsdom_1.default;
+class VideoSinkSet {
+}
+exports.VideoSinkSet = VideoSinkSet;
 class MultiStreamsMixer {
     constructor(_arrayOfMediaStreams, elementClass = 'multi-streams-mixer') {
         this.videoSinks = new Array();
@@ -71,7 +74,9 @@ class MultiStreamsMixer {
         }
         this.canvas.height = this.height * height;
         this.videoSinks.forEach((videoSink, idx) => {
-            this.drawImage(videoSink, idx);
+            if (videoSink.frameCanvas) {
+                this.drawImage(videoSink.frameCanvas, idx);
+            }
         });
         const canvasFrame = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height);
         const webrtcFrame = { width: this.canvas.width, height: this.canvas.height, data: new Uint8ClampedArray(this.canvas.width * this.canvas.height * 1.5) };
@@ -79,7 +84,7 @@ class MultiStreamsMixer {
         this.videoSource.onFrame(webrtcFrame);
         setTimeout(this.drawVideosToCanvas.bind(this), this.frameInterval);
     }
-    drawImage(videoSink, idx) {
+    drawImage(frameCanvas, idx) {
         if (this.isStopDrawingFrames) {
             return;
         }
@@ -109,17 +114,7 @@ class MultiStreamsMixer {
             x = this.width;
             y = this.height * 3;
         }
-        videoSink.onframe = ({ frame }) => {
-            const canvasFrame = { width: frame.width, height: frame.height, data: new Uint8ClampedArray(frame.width * frame.height * 4) };
-            i420ToRgba(frame, canvasFrame);
-            const imageData = new canvas_1.ImageData(new Uint8ClampedArray(canvasFrame.data), canvasFrame.width, canvasFrame.height);
-            const frameCanvas = (0, canvas_1.createCanvas)(frame.width, frame.height);
-            const frameCtx = frameCanvas.getContext('2d');
-            console.log("imageData", imageData);
-            frameCtx.putImageData(imageData, 0, 0);
-            console.log("frameCtx", frameCtx);
-            this.context.drawImage(frameCanvas, x, y, this.width, this.height);
-        };
+        this.context.drawImage(frameCanvas, x, y, this.width, this.height);
     }
     getMixedStream() {
         this.isStopDrawingFrames = false;
@@ -198,7 +193,18 @@ class MultiStreamsMixer {
                 return t.kind === 'video';
             }).length) {
                 stream.getVideoTracks().forEach(videoTrack => {
-                    this.videoSinks.push(new RTCVideoSink(videoTrack));
+                    const sinkSet = new VideoSinkSet();
+                    sinkSet.videoSink = new RTCVideoSink(videoTrack);
+                    sinkSet.videoSink.onframe = ({ frame }) => {
+                        const canvasFrame = { width: frame.width, height: frame.height, data: new Uint8ClampedArray(frame.width * frame.height * 4) };
+                        i420ToRgba(frame, canvasFrame);
+                        const imageData = new canvas_1.ImageData(new Uint8ClampedArray(canvasFrame.data), canvasFrame.width, canvasFrame.height);
+                        const frameCanvas = (0, canvas_1.createCanvas)(frame.width, frame.height);
+                        const frameCtx = frameCanvas.getContext('2d');
+                        frameCtx.putImageData(imageData, 0, 0);
+                        sinkSet.frameCanvas = frameCanvas;
+                    };
+                    this.videoSinks.push(sinkSet);
                 });
             }
             if (stream.getTracks().filter(function (t) {

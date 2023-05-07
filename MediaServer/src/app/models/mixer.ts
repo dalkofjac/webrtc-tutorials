@@ -6,9 +6,14 @@ const { RTCVideoSource, RTCVideoSink, rgbaToI420, i420ToRgba } = require('wrtc')
 
 const { JSDOM } = jsdom;
 
+export class VideoSinkSet {
+  videoSink: any;
+  frameCanvas: Canvas;
+}
+
 export class MultiStreamsMixer {
 
-  videoSinks = new Array<any>();
+  videoSinks = new Array<VideoSinkSet>();
   isStopDrawingFrames: boolean;
   canvas : Canvas;
   context : CanvasRenderingContext2D;
@@ -88,7 +93,9 @@ export class MultiStreamsMixer {
     this.canvas.height = this.height * height;
 
     this.videoSinks.forEach((videoSink, idx) => {
-      this.drawImage(videoSink, idx);
+      if (videoSink.frameCanvas) {
+        this.drawImage(videoSink.frameCanvas, idx);
+      }
     });
 
     const canvasFrame = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height);
@@ -99,7 +106,7 @@ export class MultiStreamsMixer {
     setTimeout(this.drawVideosToCanvas.bind(this), this.frameInterval);
   }
 
-  private drawImage(videoSink, idx) {
+  private drawImage(frameCanvas: Canvas, idx: number) {
     if (this.isStopDrawingFrames) {
       return;
     }
@@ -138,15 +145,7 @@ export class MultiStreamsMixer {
       y = this.height * 3;
     }
 
-    videoSink.onframe = ({ frame }) => {
-      const canvasFrame = { width: frame.width, height: frame.height, data: new Uint8ClampedArray(frame.width * frame.height * 4) };
-      i420ToRgba(frame, canvasFrame);
-      const imageData = new ImageData(new Uint8ClampedArray(canvasFrame.data), canvasFrame.width, canvasFrame.height);
-      const frameCanvas = createCanvas(frame.width, frame.height);
-      const frameCtx = frameCanvas.getContext('2d');
-      frameCtx.putImageData(imageData, 0, 0);
-      this.context.drawImage(frameCanvas, x, y, this.width, this.height);
-    };
+    this.context.drawImage(frameCanvas, x, y, this.width, this.height);
   }
 
   getMixedStream() {
@@ -231,7 +230,18 @@ export class MultiStreamsMixer {
                 return t.kind === 'video';
             }).length) {
               stream.getVideoTracks().forEach(videoTrack => {
-                this.videoSinks.push(new RTCVideoSink(videoTrack));
+                const sinkSet = new VideoSinkSet();
+                sinkSet.videoSink = new RTCVideoSink(videoTrack);
+                sinkSet.videoSink.onframe = ({ frame }) => {
+                  const canvasFrame = { width: frame.width, height: frame.height, data: new Uint8ClampedArray(frame.width * frame.height * 4) };
+                  i420ToRgba(frame, canvasFrame);
+                  const imageData = new ImageData(new Uint8ClampedArray(canvasFrame.data), canvasFrame.width, canvasFrame.height);
+                  const frameCanvas = createCanvas(frame.width, frame.height);
+                  const frameCtx = frameCanvas.getContext('2d');
+                  frameCtx.putImageData(imageData, 0, 0);
+                  sinkSet.frameCanvas = frameCanvas;
+                };
+                this.videoSinks.push(sinkSet);
               });
       }
 
