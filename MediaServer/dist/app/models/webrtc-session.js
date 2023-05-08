@@ -100,7 +100,7 @@ class WebRTCSession {
             if (this.mixer) {
                 this.clients.forEach(client => {
                     const remoteStream = this.mixer.getMixedStream();
-                    if (remoteStream && remoteStream.getVideoTracks()) {
+                    if (remoteStream && remoteStream.getAudioTracks() && remoteStream.getVideoTracks()) {
                         client.addRemoteTracks(remoteStream);
                     }
                 });

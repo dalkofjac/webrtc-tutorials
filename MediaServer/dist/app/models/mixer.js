@@ -1,23 +1,18 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MultiStreamsMixer = exports.VideoSinkSet = void 0;
 const wrtc_1 = require("wrtc");
 const canvas_1 = require("canvas");
-const jsdom_1 = __importDefault(require("jsdom"));
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { RTCVideoSource, RTCVideoSink, rgbaToI420, i420ToRgba } = require('wrtc').nonstandard;
-const { JSDOM } = jsdom_1.default;
+const { RTCVideoSource, RTCVideoSink, rgbaToI420, i420ToRgba, RTCAudioSink, RTCAudioSource } = require('wrtc').nonstandard;
 class VideoSinkSet {
 }
 exports.VideoSinkSet = VideoSinkSet;
 class MultiStreamsMixer {
-    constructor(_arrayOfMediaStreams, elementClass = 'multi-streams-mixer') {
-        this.videoSinks = new Array();
+    constructor(_arrayOfMediaStreams) {
+        this.videoSinkSets = new Array();
+        this.audioSinks = new Array();
         this.arrayOfMediaStreams = _arrayOfMediaStreams;
-        this.elementClass = elementClass;
         this.isStopDrawingFrames = false;
         this.canvas = (0, canvas_1.createCanvas)(640, 480);
         this.context = this.canvas.getContext('2d');
@@ -25,10 +20,9 @@ class MultiStreamsMixer {
         this.frameInterval = 10;
         this.width = 640;
         this.height = 480;
-        this.useGainNode = true;
-        this.audioContext = undefined;
+        this.useGainNode = false;
         this.videoSource = new RTCVideoSource();
-        this.dom = new JSDOM(`<!DOCTYPE html><html><head></head><body></body></html>`);
+        this.audioSource = new RTCAudioSource();
     }
     isPureAudio() {
         for (let i = 0; i < this.arrayOfMediaStreams.length; i++) {
@@ -39,17 +33,6 @@ class MultiStreamsMixer {
         }
         return true;
     }
-    getAudioContext() {
-        if (typeof AudioContext !== 'undefined') {
-            return new AudioContext();
-        }
-        else if (typeof this.dom.window.webkitAudioContext !== 'undefined') {
-            return new this.dom.window.webkitAudioContext();
-        }
-        else if (typeof this.dom.window.mozAudioContext !== 'undefined') {
-            return new this.dom.window.mozAudioContext();
-        }
-    }
     startDrawingFrames() {
         this.drawVideosToCanvas();
     }
@@ -57,7 +40,7 @@ class MultiStreamsMixer {
         if (this.isStopDrawingFrames) {
             return;
         }
-        const videosLength = this.videoSinks.length;
+        const videosLength = this.videoSinkSets.length;
         this.canvas.width = videosLength > 1 ? this.width * 2 : this.width;
         let height = 1;
         if (videosLength === 3 || videosLength === 4) {
@@ -73,7 +56,7 @@ class MultiStreamsMixer {
             height = 5;
         }
         this.canvas.height = this.height * height;
-        this.videoSinks.forEach((videoSink, idx) => {
+        this.videoSinkSets.forEach((videoSink, idx) => {
             if (videoSink.frameCanvas) {
                 this.drawImage(videoSink.frameCanvas, idx);
             }
@@ -118,8 +101,7 @@ class MultiStreamsMixer {
     }
     getMixedStream() {
         this.isStopDrawingFrames = false;
-        const mixedAudioStream = undefined;
-        //const mixedAudioStream = this.getMixedAudioStream();
+        const mixedAudioStream = this.getMixedAudioStream();
         const mixedVideoStream = (this.isPureAudio()) ? undefined : this.getMixedVideoStream();
         if (mixedVideoStream == undefined) {
             return mixedAudioStream;
@@ -148,37 +130,15 @@ class MultiStreamsMixer {
         return videoStream;
     }
     getMixedAudioStream() {
-        // via: @pehrsons
-        if (this.audioContext == undefined)
-            this.audioContext = this.getAudioContext();
-        this.audioSources = new Array();
-        if (this.useGainNode === true) {
-            this.gainNode = this.audioContext.createGain();
-            this.gainNode.connect(this.audioContext.destination);
-            this.gainNode.gain.value = 0; // don't hear self
-        }
-        let audioTracksLength = 0;
-        this.arrayOfMediaStreams.forEach(stream => {
-            if (!stream.getTracks().filter(function (t) {
-                return t.kind === 'audio';
-            }).length) {
-                return;
-            }
-            audioTracksLength++;
-            const _audioSource = this.audioContext.createMediaStreamSource(stream);
-            if (this.useGainNode === true) {
-                _audioSource.connect(this.gainNode);
-            }
-            this.audioSources.push(_audioSource);
+        const audioTrack = this.audioSource.createTrack();
+        const capturedStream = new wrtc_1.MediaStream([audioTrack]);
+        const audioStream = new wrtc_1.MediaStream({ id: 'nodejs_audio_stream' });
+        capturedStream.getTracks().filter(function (t) {
+            return t.kind === 'audio';
+        }).forEach(track => {
+            audioStream.addTrack(track);
         });
-        if (!audioTracksLength) {
-            return undefined;
-        }
-        this.audioDestination = this.audioContext.createMediaStreamDestination();
-        this.audioSources.forEach(_audioSource => {
-            _audioSource.connect(this.audioDestination);
-        });
-        return this.audioDestination.stream;
+        return audioStream;
     }
     appendStreams(streams) {
         if (!streams) {
@@ -196,46 +156,42 @@ class MultiStreamsMixer {
                     const sinkSet = new VideoSinkSet();
                     sinkSet.videoSink = new RTCVideoSink(videoTrack);
                     sinkSet.videoSink.onframe = ({ frame }) => {
-                        const canvasFrame = { width: frame.width, height: frame.height, data: new Uint8ClampedArray(frame.width * frame.height * 4) };
-                        i420ToRgba(frame, canvasFrame);
-                        const imageData = new canvas_1.ImageData(new Uint8ClampedArray(canvasFrame.data), canvasFrame.width, canvasFrame.height);
-                        const frameCanvas = (0, canvas_1.createCanvas)(frame.width, frame.height);
-                        const frameCtx = frameCanvas.getContext('2d');
-                        frameCtx.putImageData(imageData, 0, 0);
-                        sinkSet.frameCanvas = frameCanvas;
+                        if (frame) {
+                            const canvasFrame = { width: frame.width, height: frame.height, data: new Uint8ClampedArray(frame.width * frame.height * 4) };
+                            i420ToRgba(frame, canvasFrame);
+                            const imageData = new canvas_1.ImageData(new Uint8ClampedArray(canvasFrame.data), canvasFrame.width, canvasFrame.height);
+                            const frameCanvas = (0, canvas_1.createCanvas)(frame.width, frame.height);
+                            const frameCtx = frameCanvas.getContext('2d');
+                            frameCtx.putImageData(imageData, 0, 0);
+                            sinkSet.frameCanvas = frameCanvas;
+                        }
                     };
-                    this.videoSinks.push(sinkSet);
+                    this.videoSinkSets.push(sinkSet);
                 });
             }
             if (stream.getTracks().filter(function (t) {
                 return t.kind === 'audio';
-            }).length && this.audioContext) {
-                const audioSource = this.audioContext.createMediaStreamSource(stream);
-                audioSource.connect(this.audioDestination);
-                this.audioSources.push(audioSource);
+            }).length) {
+                stream.getAudioTracks().forEach(audioTrack => {
+                    const audioSink = new RTCAudioSink(audioTrack);
+                    audioSink.ondata = data => {
+                        if (data) {
+                            this.audioSource.onData(data);
+                        }
+                    };
+                    this.audioSinks.push(audioSink);
+                });
             }
         });
     }
     releaseStreams() {
         this.isStopDrawingFrames = true;
-        if (this.gainNode) {
-            this.gainNode.disconnect();
-            this.gainNode = null;
-        }
-        if (this.audioSources.length) {
-            this.audioSources.forEach(source => {
-                source.disconnect();
-            });
-            this.audioSources = [];
-        }
-        if (this.audioDestination) {
-            this.audioDestination.disconnect();
-            this.audioDestination = null;
-        }
-        if (this.audioContext) {
-            this.audioContext.close();
-        }
-        this.audioContext = null;
+        this.videoSinkSets.forEach(videoSinkSet => {
+            videoSinkSet.videoSink.stop();
+        });
+        this.audioSinks.forEach(audioSink => {
+            audioSink.stop();
+        });
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
     resetVideoStreams(streams) {
@@ -246,7 +202,6 @@ class MultiStreamsMixer {
     }
     _resetVideoStreams(streams) {
         streams = streams || this.arrayOfMediaStreams;
-        // via: @adrian-ber
         streams.forEach(stream => {
             if (!stream.getTracks().filter(function (t) {
                 return t.kind === 'video';
