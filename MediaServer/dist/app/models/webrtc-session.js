@@ -93,9 +93,7 @@ class WebRTCSession {
         if (!this.remoteStreams.find(s => s.id === stream.id)) {
             this.remoteStreams.push(stream);
             if (this.remoteStreams.length == 2) {
-                this.mixer = new mixer_1.MultiStreamsMixer(this.remoteStreams);
-                this.mixer.appendStreams(this.remoteStreams);
-                this.mixer.startDrawingFrames();
+                this.mixer = new mixer_1.MediaStreamMixer(this.remoteStreams);
             }
             if (this.mixer) {
                 this.clients.forEach(client => {
