@@ -14,7 +14,7 @@ export class HomeComponent implements OnInit {
   mode = 'Peer-to-Peer';
   clientType: WebRTCClientType = WebRTCClientType.CentralUnit;
 
-  modes: string[] = ['Peer-to-Peer', 'Mesh Conference Call', 'Star Conference Call', 'SFU Conference Call'];
+  modes: string[] = ['Peer-to-Peer', 'Mesh Conference Call', 'Star Conference Call', 'SFU Conference Call', 'MCU Conference Call'];
   clientTypes: WebRTCClientType[] = [WebRTCClientType.CentralUnit, WebRTCClientType.SideUnit];
 
   constructor(
@@ -47,6 +47,9 @@ export class HomeComponent implements OnInit {
         break;
       case 'SFU Conference Call':
         this.router.navigate(['session-call/sfu/' + this.room]);
+        break;
+      case 'MCU Conference Call':
+        this.router.navigate(['session-call/mcu/' + this.room]);
         break;
       default:
         break;

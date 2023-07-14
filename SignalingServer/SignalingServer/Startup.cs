@@ -53,7 +53,8 @@ namespace SignalingServer
                         if ((context.Request.Path.Value.StartsWith("/hubs/signaling") 
                             || context.Request.Path.Value.StartsWith("/hubs/mesh-signaling")
                             || context.Request.Path.Value.StartsWith("/hubs/star-signaling")
-                            || context.Request.Path.Value.StartsWith("/hubs/sfu-signaling"))
+                            || context.Request.Path.Value.StartsWith("/hubs/sfu-signaling")
+                            || context.Request.Path.Value.StartsWith("/hubs/mcu-signaling"))
                             && (context.Request.Query.ContainsKey("access_token")))
                         {
                             context.Token = context.Request.Query["access_token"];
@@ -98,6 +99,7 @@ namespace SignalingServer
                 endpoints.MapHub<MeshSignalingHub>("/hubs/mesh-signaling");
                 endpoints.MapHub<StarSignalingHub>("/hubs/star-signaling");
                 endpoints.MapHub<SFUSignalingHub>("/hubs/sfu-signaling");
+                endpoints.MapHub<MCUSignalingHub>("/hubs/mcu-signaling");
             });
         }
     }

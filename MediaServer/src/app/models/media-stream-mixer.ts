@@ -49,6 +49,12 @@ export interface VideoFrame {
 export class VideoSinkBundle {
   videoSink: VideoSink;
   lastFrame: VideoFrame;
+  streamId: string;
+}
+
+export class AudioSinkBundle {
+  audioSink: AudioSink;
+  streamId: string;
 }
 
 export class MediaStreamMixer {
@@ -57,7 +63,7 @@ export class MediaStreamMixer {
   private videoSource: VideoSource;
   private audioSource: AudioSource;
   private videoSinkBundles: Array<VideoSinkBundle>;
-  private audioSinks: Array<AudioSink>;
+  private audioSinkBundles: Array<AudioSinkBundle>;
 
   private canvas: Canvas;
   private context: CanvasRenderingContext2D;
@@ -66,7 +72,7 @@ export class MediaStreamMixer {
   private height: number;
   private frameInterval: number;
 
-  constructor(streams: Array<MediaStream>) {
+  constructor(streams: Array<MediaStream> = null) {
     this.streams = streams;
     this.canvas = createCanvas(640, 480);
     this.context = this.canvas.getContext('2d');
@@ -76,21 +82,12 @@ export class MediaStreamMixer {
     this.videoSource = new RTCVideoSource();
     this.audioSource = new RTCAudioSource();
     this.videoSinkBundles = new Array<VideoSinkBundle>();
-    this.audioSinks = new Array<AudioSink>();
+    this.audioSinkBundles = new Array<AudioSinkBundle>();
 
     if (streams?.length) {
       this.appendStreams(streams);
     }
     this.drawFramesToCanvas();
-  }
-
-  private isAudioOnly(): boolean {
-    for (let i = 0; i < this.streams.length; i++){
-      if (this.streams[i].getTracks().filter(function(t) {
-                return t.kind === 'video';
-            }).length > 0) return false;
-    }
-    return true;
   }
 
   private drawFramesToCanvas(): void {
@@ -174,23 +171,26 @@ export class MediaStreamMixer {
 
   getMixedStream(): MediaStream {
     const mixedAudioStream = this.getMixedAudioStream();
-    const mixedVideoStream = this.isAudioOnly() ? undefined : this.getMixedVideoStream();
-    if (mixedVideoStream == undefined){
-      return mixedAudioStream;
-    } else {
-      if (mixedAudioStream) {
-        mixedAudioStream.getTracks().filter(function(t) {
-                return t.kind === 'audio';
-            }).forEach(track => {
-          mixedVideoStream.addTrack(track);
-        });
-      }
-      return mixedVideoStream;
+    const mixedVideoStream = this.getMixedVideoStream();
+    const mixedStream = new MediaStream({ id: 'nodejs_media_stream' });
+    if (mixedVideoStream) {
+      mixedVideoStream.getTracks().filter(function(t) {
+              return t.kind === 'video';
+          }).forEach(track => {
+            mixedStream.addTrack(track);
+      });
     }
+    if (mixedAudioStream) {
+      mixedAudioStream.getTracks().filter(function(t) {
+              return t.kind === 'audio';
+          }).forEach(track => {
+            mixedStream.addTrack(track);
+      });
+    }
+    return mixedStream;
   }
 
   private getMixedVideoStream(): MediaStream {
-    this.resetVideoStreams();
     const imagesTrack = this.videoSource.createTrack();
     const capturedStream = new MediaStream([imagesTrack]);
     const videoStream = new MediaStream({ id: 'nodejs_video_stream' });
@@ -223,8 +223,13 @@ export class MediaStreamMixer {
       streams = [streams];
     }
 
-    this.streams.concat(streams);
-    streams.forEach(stream => {
+    if (this.streams?.length) {
+      this.streams.concat(streams);
+    } else {
+      this.streams = streams;
+    }
+
+    streams.forEach((stream: MediaStream) => {
       if (stream.getTracks().filter(function(t) {
                 return t.kind === 'video';
             }).length) {
@@ -236,6 +241,7 @@ export class MediaStreamMixer {
                     sinkBundle.lastFrame = frameObject.frame;
                   }
                 };
+                sinkBundle.streamId = stream.id;
                 this.videoSinkBundles.push(sinkBundle);
               });
       }
@@ -244,47 +250,45 @@ export class MediaStreamMixer {
                 return t.kind === 'audio';
             }).length) {
               stream.getAudioTracks().forEach((audioTrack: MediaStreamTrack) => {
-                const audioSink = new RTCAudioSink(audioTrack);
-                audioSink.ondata = (data: AudioData) => {
+                const sinkBundle = new AudioSinkBundle();
+                sinkBundle.audioSink = new RTCAudioSink(audioTrack);
+                sinkBundle.audioSink.ondata = (data: AudioData) => {
                   if (data) {
                     this.audioSource.onData(data);
                   }
                 };
-                this.audioSinks.push(audioSink);
+                sinkBundle.streamId = stream.id;
+                this.audioSinkBundles.push(sinkBundle);
               });
       }
     });
   }
 
-  private releaseStreams(): void {
-    this.videoSinkBundles.forEach(videoSinkSet => {
-      videoSinkSet.videoSink.stop();
-    });
-
-    this.audioSinks.forEach(audioSink => {
-      audioSink.stop();
-    });
-
-    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-  }
-
-  private resetVideoStreams(streams?: Array<MediaStream>): void {
-    if (streams && !(streams instanceof Array)) {
-      streams = [streams];
+  removeStreams(streamIds: Array<string>): void {
+    if (!streamIds) {
+      throw 'First parameter is required.';
     }
 
-    this._resetVideoStreams(streams);
-  }
+    if (!(streamIds instanceof Array)) {
+      streamIds = [streamIds];
+    }
 
-  private _resetVideoStreams(streams: Array<MediaStream>): void {
-    streams = streams || this.streams;
+    this.streams = this.streams.filter(s => !streamIds.find(ss => ss === s.id));
 
-    streams.forEach(stream => {
-      if (!stream.getTracks().filter(function(t) {
-                return t.kind === 'video';
-            }).length) {
-        return;
-      }
+    streamIds.forEach((streamId: string) => {
+      this.videoSinkBundles.forEach(videoSinkSet => {
+        if (videoSinkSet.streamId === streamId) {
+          videoSinkSet.videoSink.stop();
+        }
+      });
+      this.videoSinkBundles = this.videoSinkBundles.filter(v => v.streamId !== streamId);
+  
+      this.audioSinkBundles.forEach(audioSinkSet => {
+        if (audioSinkSet.streamId === streamId) {
+          audioSinkSet.audioSink.stop();
+        }
+      });
+      this.audioSinkBundles = this.audioSinkBundles.filter(v => v.streamId !== streamId);
     });
   }
 }

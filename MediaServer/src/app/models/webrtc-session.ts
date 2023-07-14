@@ -1,7 +1,7 @@
 import { SignalrService } from "../services/signalr.service";
 import { WebRTCClient } from "./webrtc-client";
 import { MediaStream } from 'wrtc';
-import { MediaStreamMixer } from "./mixer";
+import { MediaStreamMixer } from "./media-stream-mixer";
 
 export enum WebRTCClientType {
   CentralUnit = 'central_unit',
@@ -16,7 +16,11 @@ export class WebRTCSession {
 
   constructor(
     private room: string,
-    private signaling: SignalrService) {
+    private signaling: SignalrService,
+    private mixStreams = false) {
+      if (this.mixStreams) {
+        this.mixer = new MediaStreamMixer();
+      }
       this.start();
   }
 
@@ -97,31 +101,50 @@ export class WebRTCSession {
   addRemoteStream(clientId: string, stream: MediaStream): void {
     if (!this.remoteStreams.find(s => s.id === stream.id)) {
       this.remoteStreams.push(stream);
-      if (this.remoteStreams.length == 2) {
-        this.mixer = new MediaStreamMixer(this.remoteStreams);
-      }
-      if (this.mixer) {
-        this.clients.forEach(client => {
-          const remoteStream = this.mixer.getMixedStream();
-          if (remoteStream && remoteStream.getAudioTracks() && remoteStream.getVideoTracks()) {
-            client.addRemoteTracks(remoteStream);
+      if (this.mixStreams) {
+        this.mixer.appendStreams(stream);
+        if (this.remoteStreams.length === 1) {
+          return;
+        } else if (this.remoteStreams.length === 2) {
+          this.clients.forEach(client => {
+            const mixedStream = this.mixer.getMixedStream();
+            if (mixedStream) {
+              client.addRemoteTracks(mixedStream);
+            }
+          });
+        } else {
+          const client = this.findClient(clientId);
+          const mixedStream = this.mixer.getMixedStream();
+          if (mixedStream) {
+            client.addRemoteTracks(mixedStream);
           }
-        });
+        }
       }
+    } else {
+      this.clients.forEach(client => {
+        if (clientId !== client.getClientId()) {
+          client.addRemoteTracks(stream);
+        }
+      });
     }
   }
 
   removeRemoteStreams(clientId: string, streamIds: string[]): void {
     this.remoteStreams = this.remoteStreams.filter(s => !streamIds.find(i => i === s.id));
-    this.clients.forEach(client => {
-      if (client.getClientId() !== clientId) {
-        const message = {
-          type: 'streams removed',
-          streams: streamIds
-        };
-        this.sendMessage(message, client.getClientId());
-      }
-    });
+    if (this.mixStreams) {
+      this.mixer.removeStreams(streamIds);
+    } else {
+      this.clients.forEach(client => {
+        if (client.getClientId() !== clientId) {
+          const message = {
+            type: 'streams removed',
+            streams: streamIds
+          };
+          this.sendMessage(message, client.getClientId());
+        }
+      });
+    }
+
   }
 
   removeClient(clientId: string): void {

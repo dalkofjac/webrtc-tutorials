@@ -19,6 +19,7 @@ import { SessionCallMeshComponent } from './components/session-call-mesh/session
 import { MatSelectModule } from '@angular/material/select';
 import { SessionCallStarComponent } from './components/session-call-star/session-call-star.component';
 import { SessionCallSFUComponent } from './components/session-call-sfu/session-call-sfu.component';
+import { SessionCallMCUComponent } from './components/session-call-mcu/session-call-mcu.component';
 
 
 @NgModule({
@@ -28,7 +29,8 @@ import { SessionCallSFUComponent } from './components/session-call-sfu/session-c
     SessionCallComponent,
     SessionCallMeshComponent,
     SessionCallStarComponent,
-    SessionCallSFUComponent
+    SessionCallSFUComponent,
+    SessionCallMCUComponent
   ],
   imports: [
     BrowserModule,

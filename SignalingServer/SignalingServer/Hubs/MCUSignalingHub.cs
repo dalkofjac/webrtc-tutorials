@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace SignalingServer.Hubs
 {
     [Authorize]
-    public class SFUSignalingHub : Hub
+    public class MCUSignalingHub : Hub
     {
         private static readonly Dictionary<string, List<HubClient>> ConnectedClients = new();
 
@@ -56,7 +56,7 @@ namespace SignalingServer.Hubs
 
             var numberOfClients = ConnectedClients[roomName].Count;
             await EmitLog("Room " + roomName + " now has " + numberOfClients + " client(s)", roomName);
-            if (numberOfClients == 1) 
+            if (numberOfClients == 1)
             {
                 await EmitRoomCreated(roomName);
             }

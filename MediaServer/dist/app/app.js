@@ -18,22 +18,33 @@ const signalr_service_1 = require("./services/signalr.service");
 const app = (0, express_1.default)();
 const port = 3000;
 const sessions = [];
-const signaling = new signalr_service_1.SignalrService();
+const sfuSignaling = new signalr_service_1.SignalrService();
+const mcuSignaling = new signalr_service_1.SignalrService();
 app.get('/', (req, res) => {
     res.send('The WebRTC media server is running.');
 });
 app.listen(port, () => {
     return console.log(`Express is listening at http://localhost:${port}`);
 });
-signaling.connect('/auth').then(() => {
-    if (signaling.isConnected()) {
-        signaling.invoke('Authorize').then((token) => {
+sfuSignaling.connect('/auth').then(() => {
+    if (sfuSignaling.isConnected()) {
+        sfuSignaling.invoke('Authorize').then((token) => {
             if (token) {
-                signaling.connect('/sfu-signaling', token).then(() => __awaiter(void 0, void 0, void 0, function* () {
-                    if (signaling.isConnected()) {
-                        signaling.define('room created', (room) => {
+                sfuSignaling.connect('/sfu-signaling', token).then(() => __awaiter(void 0, void 0, void 0, function* () {
+                    if (sfuSignaling.isConnected()) {
+                        sfuSignaling.define('room created', (room) => {
                             if (!sessions.find(s => s.getRoom() === room)) {
-                                const newSession = new webrtc_session_1.WebRTCSession(room, signaling);
+                                const newSession = new webrtc_session_1.WebRTCSession(room, sfuSignaling);
+                                sessions.push(newSession);
+                            }
+                        });
+                    }
+                }));
+                mcuSignaling.connect('/mcu-signaling', token).then(() => __awaiter(void 0, void 0, void 0, function* () {
+                    if (mcuSignaling.isConnected()) {
+                        mcuSignaling.define('room created', (room) => {
+                            if (!sessions.find(s => s.getRoom() === room)) {
+                                const newSession = new webrtc_session_1.WebRTCSession(room, mcuSignaling, true);
                                 sessions.push(newSession);
                             }
                         });

@@ -28,15 +28,6 @@ class MediaStreamMixer {
         }
         this.drawFramesToCanvas();
     }
-    isAudioOnly() {
-        for (let i = 0; i < this.streams.length; i++) {
-            if (this.streams[i].getTracks().filter(function (t) {
-                return t.kind === 'video';
-            }).length > 0)
-                return false;
-        }
-        return true;
-    }
     drawFramesToCanvas() {
         if (this.videoSinkBundles.length) {
             const videosLength = this.videoSinkBundles.length;
@@ -104,34 +95,25 @@ class MediaStreamMixer {
     }
     getMixedStream() {
         const mixedAudioStream = this.getMixedAudioStream();
-        const mixedVideoStream = this.isAudioOnly() ? undefined : this.getMixedVideoStream();
-        if (!mixedVideoStream) {
-            return mixedAudioStream;
+        const mixedVideoStream = this.getMixedVideoStream();
+        const mixedStream = new wrtc_1.MediaStream({ id: 'nodejs_media_stream' });
+        if (mixedVideoStream) {
+            mixedVideoStream.getTracks().filter(function (t) {
+                return t.kind === 'video';
+            }).forEach(track => {
+                mixedStream.addTrack(track);
+            });
         }
-        else if (!mixedAudioStream) {
-            return mixedVideoStream;
+        if (mixedAudioStream) {
+            mixedAudioStream.getTracks().filter(function (t) {
+                return t.kind === 'audio';
+            }).forEach(track => {
+                mixedStream.addTrack(track);
+            });
         }
-        else {
-            const mixedStream = new wrtc_1.MediaStream({ id: 'nodejs_media_stream' });
-            if (mixedVideoStream) {
-                mixedVideoStream.getTracks().filter(function (t) {
-                    return t.kind === 'video';
-                }).forEach(track => {
-                    mixedStream.addTrack(track);
-                });
-            }
-            if (mixedAudioStream) {
-                mixedAudioStream.getTracks().filter(function (t) {
-                    return t.kind === 'audio';
-                }).forEach(track => {
-                    mixedStream.addTrack(track);
-                });
-            }
-            return mixedStream;
-        }
+        return mixedStream;
     }
     getMixedVideoStream() {
-        this.resetVideoStreams();
         const imagesTrack = this.videoSource.createTrack();
         const capturedStream = new wrtc_1.MediaStream([imagesTrack]);
         const videoStream = new wrtc_1.MediaStream({ id: 'nodejs_video_stream' });
@@ -223,31 +205,6 @@ class MediaStreamMixer {
             this.audioSinkBundles = this.audioSinkBundles.filter(v => v.streamId !== streamId);
         });
     }
-    releaseStreams() {
-        this.videoSinkBundles.forEach(videoSinkSet => {
-            videoSinkSet.videoSink.stop();
-        });
-        this.audioSinkBundles.forEach(audioSinkSet => {
-            audioSinkSet.audioSink.stop();
-        });
-        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    }
-    resetVideoStreams(streams) {
-        if (streams && !(streams instanceof Array)) {
-            streams = [streams];
-        }
-        this._resetVideoStreams(streams);
-    }
-    _resetVideoStreams(streams) {
-        streams = streams || this.streams;
-        streams.forEach(stream => {
-            if (!stream.getTracks().filter(function (t) {
-                return t.kind === 'video';
-            }).length) {
-                return;
-            }
-        });
-    }
 }
 exports.MediaStreamMixer = MediaStreamMixer;
-//# sourceMappingURL=mixer.js.map
+//# sourceMappingURL=media-stream-mixer.js.map
