@@ -1,2 +1,3 @@
+include ':local-sdk'
 include ':app'
 rootProject.name = "WebRTCAndroidApp"

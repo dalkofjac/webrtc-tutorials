@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         findViewById(R.id.btn_start).setOnClickListener(this);
         mSignalrService = new SignalrService( "/auth", false);
 
-        if(!hasPermissions(this, mPermissions)) {
+        if (!hasPermissions(this, mPermissions)) {
             requestPermissions();
         }
     }
@@ -55,10 +55,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onClick(View v) {
-        if(v.getId() == R.id.btn_start) {
+        if (v.getId() == R.id.btn_start) {
             String roomName = ((EditText) findViewById(R.id.et_room)).getText().toString();
 
-            if(roomName.length() < 2) {
+            if (roomName.length() < 2) {
                 Toast.makeText(MainActivity.this, getString(R.string.error_room_name_length), Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -83,7 +83,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void requestPermissions(){
         int PERMISSION_ALL = 1;
 
-        if(!hasPermissions(this, mPermissions)){
+        if (!hasPermissions(this, mPermissions)){
             ActivityCompat.requestPermissions(this, mPermissions, PERMISSION_ALL);
         }
     }
@@ -103,7 +103,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mSignalrService.connect(() -> {
             if (mSignalrService.isConnected()) {
                 mTokenDisposable = mSignalrService.invoke(String.class, "Authorize").subscribe(token -> {
-                    if(token != null) {
+                    if (token != null) {
                         SharedPreferences.Editor editor = getSharedPreferences("USER_PREFERENCES", Context.MODE_PRIVATE).edit();
                         editor.putString("TOKEN", token);
                         editor.apply();

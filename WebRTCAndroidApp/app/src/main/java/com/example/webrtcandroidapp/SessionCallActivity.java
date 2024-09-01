@@ -207,16 +207,16 @@ public class SessionCallActivity extends AppCompatActivity {
     private void initiateCall() {
         Log.d(TAG, "initiateCall");
 
-        if(!mIsStarted && mIsChannelReady && mLocalVideoView != null) {
+        if (!mIsStarted && mIsChannelReady && mLocalVideoView != null) {
             createPeerConnection();
 
-            if(mPeerConnection != null && mLocalAudioTrack != null && mLocalVideoTrack != null) {
+            if (mPeerConnection != null && mLocalAudioTrack != null && mLocalVideoTrack != null) {
                 mPeerConnection.addTrack(mLocalAudioTrack, Arrays.asList("WebRTC-stream"));
                 mPeerConnection.addTrack(mLocalVideoTrack, Arrays.asList("WebRTC-stream"));
             }
 
             mIsStarted = true;
-            if(mIsInitiator) {
+            if (mIsInitiator) {
                 sendOffer();
             }
         }
@@ -244,9 +244,9 @@ public class SessionCallActivity extends AppCompatActivity {
             @Override
             public void onAddTrack(RtpReceiver rtpReceiver, MediaStream[] mediaStreams) {
                 Log.d(TAG, "mPeerConnection::onAddTrack");
-                if(rtpReceiver.track() != null && rtpReceiver.track().kind() != null && rtpReceiver.track().kind().equals("video")) {
+                if (rtpReceiver.track() != null && rtpReceiver.track().kind() != null && rtpReceiver.track().kind().equals("video")) {
                     VideoTrack track = (VideoTrack) rtpReceiver.track();
-                    if(track != null) {
+                    if (track != null) {
                         track.addSink(mRemoteVideoView);
                     }
                 }
@@ -319,7 +319,7 @@ public class SessionCallActivity extends AppCompatActivity {
     private void sendMessage(Object message) {
         Log.d(TAG, "sendMessage");
 
-        if(mSignalrService != null) {
+        if (mSignalrService != null) {
             mSignalrService.invoke("SendMessage", message, mRoomName);
         }
     }
@@ -354,7 +354,7 @@ public class SessionCallActivity extends AppCompatActivity {
 
         mIsStarted = false;
         mIsChannelReady = false;
-        if(mPeerConnection != null) {
+        if (mPeerConnection != null) {
             mPeerConnection.close();
             mPeerConnection = null;
         }
