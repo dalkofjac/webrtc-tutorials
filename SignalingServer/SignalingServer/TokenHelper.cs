@@ -7,7 +7,7 @@ namespace SignalingServer
 {
     public static class TokenHelper
     {
-        public static string SECRET = "secret_signing_key";
+        public static string SECRET = "secret_signing_key_with_the_key_size_of_at_least_256_bits";
 
         public static string GenerateToken()
         {
