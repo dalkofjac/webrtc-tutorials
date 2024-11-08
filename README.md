@@ -14,7 +14,7 @@ The audio/video track(s) mixing for MCU (Multipoint Control Unit) topology is im
 The face recognition (anonymization) in Android app is implemented using [Google's MediaPipe](https://github.com/google-ai-edge/mediapipe) algorithms. The implementation can be seen in the [FaceAnonymizer class](https://github.com/dalkofjac/webrtc-tutorials/blob/master/WebRTCAndroidApp/app/src/main/java/com/example/webrtcandroidapp/ai/FaceAnonymizer.java). To test it out, just set the "USE_FACE_ANONYMIZATION" flag to "true" in [AndroidCameraCapturer class](https://github.com/dalkofjac/webrtc-tutorials/blob/master/WebRTCAndroidApp/app/src/main/java/com/example/webrtcandroidapp/capturers/AndroidCameraCapturer.java).
 
 # Blog
-Find more details on the implementation itself on the [blog site](https://ekobit.com/author/dkofjacekobit-hr/).
+Find more details on the implementation itself on the [blog site](https://ekobit.com/author/dkofjacekobit-hr/) and [my LinkedIn](https://www.linkedin.com/in/dalibor-kofjac/).
 
 # License
 This repository uses [MIT license](https://github.com/dalkofjac/webrtc-tutorials/blob/master/LICENSE). Copyright (c) Dalibor Kofjač.
