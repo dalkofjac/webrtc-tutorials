@@ -117,6 +117,13 @@ class WebRTCSession {
                     }
                 }
             }
+            else {
+                this.clients.forEach(client => {
+                    if (clientId !== client.getClientId()) {
+                        client.addRemoteTracks(stream);
+                    }
+                });
+            }
         }
         else {
             this.clients.forEach(client => {

@@ -14,7 +14,6 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { HomeComponent } from './components/home/home.component';
 import { SessionCallComponent } from './components/session-call/session-call.component';
 import { FormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
 import { SessionCallMeshComponent } from './components/session-call-mesh/session-call-mesh.component';
 import { MatSelectModule } from '@angular/material/select';
 import { SessionCallStarComponent } from './components/session-call-star/session-call-star.component';
@@ -37,7 +36,6 @@ import { SessionCallMCUComponent } from './components/session-call-mcu/session-c
     AppRoutingModule,
     BrowserAnimationsModule,
     FormsModule,
-    HttpClientModule,
 
     // Angular Material
     MatButtonModule,

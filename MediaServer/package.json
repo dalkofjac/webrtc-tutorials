@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@mapbox/node-pre-gyp": "^1.0.10",
-    "@microsoft/signalr": "^7.0.2",
+    "@microsoft/signalr": "^8.0.7",
     "canvas": "^2.11.2",
     "express": "^4.17.1",
     "wrtc": "0.4.7"
