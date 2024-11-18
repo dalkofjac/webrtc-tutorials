@@ -5,6 +5,7 @@ import { SignalrService } from './services/signalr.service';
 const app = express();
 const port = 3000;
 const sessions: WebRTCSession[] = [];
+const authSignaling = new SignalrService();
 const sfuSignaling = new SignalrService();
 const mcuSignaling = new SignalrService();
 
@@ -16,9 +17,9 @@ app.listen(port, () => {
   return console.log(`Express is listening at http://localhost:${port}`);
 });
 
-sfuSignaling.connect('/auth').then(() => {
-  if (sfuSignaling.isConnected()) {
-    sfuSignaling.invoke('Authorize').then((token: string) => {
+authSignaling.connect('/auth').then(() => {
+  if (authSignaling.isConnected()) {
+    authSignaling.invoke('Authorize').then((token: string) => {
       if (token) {
         sfuSignaling.connect('/sfu-signaling', token).then(async () => {
           if (sfuSignaling.isConnected()) {

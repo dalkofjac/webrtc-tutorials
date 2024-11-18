@@ -18,6 +18,7 @@ const signalr_service_1 = require("./services/signalr.service");
 const app = (0, express_1.default)();
 const port = 3000;
 const sessions = [];
+const authSignaling = new signalr_service_1.SignalrService();
 const sfuSignaling = new signalr_service_1.SignalrService();
 const mcuSignaling = new signalr_service_1.SignalrService();
 app.get('/', (req, res) => {
@@ -26,9 +27,9 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
     return console.log(`Express is listening at http://localhost:${port}`);
 });
-sfuSignaling.connect('/auth').then(() => {
-    if (sfuSignaling.isConnected()) {
-        sfuSignaling.invoke('Authorize').then((token) => {
+authSignaling.connect('/auth').then(() => {
+    if (authSignaling.isConnected()) {
+        authSignaling.invoke('Authorize').then((token) => {
             if (token) {
                 sfuSignaling.connect('/sfu-signaling', token).then(() => __awaiter(void 0, void 0, void 0, function* () {
                     if (sfuSignaling.isConnected()) {
