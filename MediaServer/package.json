@@ -6,7 +6,8 @@
   "scripts": {
     "start": "tsc && node dist/app/app.js",
     "lint": "eslint . --ext .ts",
-    "dev": "concurrently \"npx tsc --watch\" \"nodemon -q dist/index.js\""
+    "dev": "concurrently \"npx tsc --watch\" \"nodemon -q dist/index.js\"",
+    "build": "tsc"
   },
   "author": "",
   "license": "ISC",

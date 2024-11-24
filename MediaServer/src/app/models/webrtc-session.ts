@@ -95,6 +95,12 @@ export class WebRTCSession {
         () => this.remoteStreams);
 
       this.clients.push(client);
+
+      setTimeout(() => {
+        if (!client.getIsStarted()) {
+          client.initiateCall();
+        }
+      }, 3000);
     }
   }
 

@@ -91,6 +91,11 @@ class WebRTCSession {
         if (!this.findClient(clientId)) {
             const client = new webrtc_client_1.WebRTCClient(clientId, initiator, (message) => this.sendMessage(message, clientId), (remoteStream) => this.addRemoteStream(clientId, remoteStream), () => this.removeClient(clientId), () => this.remoteStreams);
             this.clients.push(client);
+            setTimeout(() => {
+                if (!client.getIsStarted()) {
+                    client.initiateCall();
+                }
+            }, 3000);
         }
     }
     addRemoteStream(clientId, stream) {

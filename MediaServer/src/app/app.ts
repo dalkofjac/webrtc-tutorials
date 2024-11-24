@@ -3,7 +3,7 @@ import { WebRTCSession } from './models/webrtc-session';
 import { SignalrService } from './services/signalr.service';
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 const sessions: WebRTCSession[] = [];
 const authSignaling = new SignalrService();
 const sfuSignaling = new SignalrService();
