@@ -58,7 +58,8 @@ public class SessionCallActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_session_call);
+        setContentView(WebRTCAndroidApp.USE_SMARTGLASS_OPTIMIZATION
+                ? R.layout.activity_session_call_smartglass : R.layout.activity_session_call );
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         mRoomName = getIntent().getExtras().getString("ROOM_NAME");
@@ -94,7 +95,7 @@ public class SessionCallActivity extends AppCompatActivity {
         mLocalVideoView.setMirror(false);
         mRemoteVideoView = findViewById(R.id.remote_gl_surface_view);
         mRemoteVideoView.init(mRootEglBase.getEglBaseContext(), null);
-        mRemoteVideoView.setZOrderMediaOverlay(true);
+        mRemoteVideoView.setZOrderMediaOverlay(false);
         mRemoteVideoView.setMirror(false);
     }
 

@@ -27,7 +27,7 @@ android {
         }
         debug {
             minifyEnabled false
-            buildConfigField("String", "SIGNALING_SERVER_URL", '"https://31b2-141-138-29-55.ngrok-free.app/hubs"')
+            buildConfigField("String", "SIGNALING_SERVER_URL", '"https://9530-141-136-164-90.ngrok-free.app/hubs"')
             buildConfigField("String", "STUN_SERVER_1", '"stun:stun.1.google.com:19302"')
             buildConfigField("String", "STUN_SERVER_2", '"stun:stun1.l.google.com:19302"')
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'

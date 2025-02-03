@@ -42,6 +42,7 @@ public class AndroidCameraCapturer extends Camera1Capturer implements VideoCaptu
 
     private static final String TAG = "AndroidCameraCapturer";
 
+    // Set this variable to "true" in case face anonymization should be active
     private static final boolean USE_FACE_ANONYMIZATION = false;
 
     private AndroidCameraCapturer(String deviceName, boolean captureToTexture) {

@@ -21,8 +21,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private final String[] mPermissions = {
             Manifest.permission.CAMERA,
-            Manifest.permission.RECORD_AUDIO,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
+            Manifest.permission.RECORD_AUDIO
     };
 
     private SignalrService mSignalrService;
@@ -31,7 +30,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(WebRTCAndroidApp.USE_SMARTGLASS_OPTIMIZATION
+                ? R.layout.activity_main_smartglass : R.layout.activity_main);
         findViewById(R.id.btn_start).setOnClickListener(this);
         mSignalrService = new SignalrService( "/auth", false);
 
@@ -83,7 +83,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void requestPermissions(){
         int PERMISSION_ALL = 1;
 
-        if (!hasPermissions(this, mPermissions)){
+        if (!hasPermissions(this, mPermissions)) {
             ActivityCompat.requestPermissions(this, mPermissions, PERMISSION_ALL);
         }
     }
