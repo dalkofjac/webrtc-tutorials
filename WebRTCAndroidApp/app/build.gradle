@@ -24,19 +24,22 @@ android {
             buildConfigField("String", "STUN_SERVER_1", '"stun:stun.1.google.com:19302"')
             buildConfigField("String", "STUN_SERVER_2", '"stun:stun1.l.google.com:19302"')
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            manifestPlaceholders.networkSecurityConfig = '@xml/network_security_config'
         }
         debug {
             minifyEnabled false
-            buildConfigField("String", "SIGNALING_SERVER_URL", '"https://9530-141-136-164-90.ngrok-free.app/hubs"')
+            buildConfigField("String", "SIGNALING_SERVER_URL", '"http://localhost:5000/hubs"')
             buildConfigField("String", "STUN_SERVER_1", '"stun:stun.1.google.com:19302"')
             buildConfigField("String", "STUN_SERVER_2", '"stun:stun1.l.google.com:19302"')
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            manifestPlaceholders.networkSecurityConfig = '@xml/network_security_config'
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
+    namespace 'com.example.webrtcandroidapp'
 }
 
 dependencies {
