@@ -21,6 +21,7 @@ import android.view.Surface;
 
 import androidx.annotation.NonNull;
 
+import com.example.webrtcandroidapp.WebRTCAndroidApp;
 import com.example.webrtcandroidapp.ai.FaceAnonymizer;
 
 import org.webrtc.Camera1Capturer;
@@ -144,7 +145,7 @@ public class AndroidCameraCapturer extends Camera1Capturer implements VideoCaptu
     }
 
     private String getFrontCameraId(CameraManager cameraManager) {
-        String cameraId = "";
+        String cameraId = null;
         try {
             for (String camera : cameraManager.getCameraIdList()) {
                 CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(camera);
@@ -153,8 +154,11 @@ public class AndroidCameraCapturer extends Camera1Capturer implements VideoCaptu
                     break;
                 }
             }
+            if (cameraId == null) {
+                cameraId = cameraManager.getCameraIdList()[0];
+            }
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e(TAG, "getFrontCameraId: Failed.", e);
         }
         return cameraId;
     }
@@ -175,6 +179,7 @@ public class AndroidCameraCapturer extends Camera1Capturer implements VideoCaptu
             int height = img.getHeight();
 
             byte[] nv21;
+            int baseRotation;
 
             ByteBuffer yBuffer = img.getPlanes()[0].getBuffer();
             ByteBuffer uBuffer = img.getPlanes()[1].getBuffer();
@@ -184,11 +189,19 @@ public class AndroidCameraCapturer extends Camera1Capturer implements VideoCaptu
             int uSize = uBuffer.remaining();
             int vSize = vBuffer.remaining();
 
-            nv21 = new byte[ySize * 2];
-
-            yBuffer.get(nv21, 0, ySize);
-            vBuffer.get(nv21, ySize, vSize);
-            uBuffer.get(nv21, (int) (ySize * 1.5), uSize);
+            if (WebRTCAndroidApp.USE_SMARTGLASS_OPTIMIZATION) {
+                nv21 = new byte[ySize + uSize + vSize];
+                yBuffer.get(nv21, 0, ySize);
+                vBuffer.get(nv21, ySize, vSize);
+                uBuffer.get(nv21, ySize + vSize, uSize);
+                baseRotation = 0;
+            } else {
+                nv21 = new byte[ySize * 2];
+                yBuffer.get(nv21, 0, ySize);
+                vBuffer.get(nv21, ySize, vSize);
+                uBuffer.get(nv21, (int) (ySize * 1.5), uSize);
+                baseRotation = 90;
+            }
 
             byte[] nv21Original = Arrays.copyOf(nv21, nv21.length);
             mFaceAnonymizer.removeFacesFromNV21(nv21, ySize);
@@ -201,7 +214,7 @@ public class AndroidCameraCapturer extends Camera1Capturer implements VideoCaptu
             long timestampNS = TimeUnit.MILLISECONDS.toNanos(SystemClock.elapsedRealtime());
             NV21Buffer buffer = new NV21Buffer(nv21, width, height, null);
             final int FACE_ANONYMIZATION_ROTATION = 180;
-            VideoFrame videoFrame = new VideoFrame(buffer, FACE_ANONYMIZATION_ROTATION + 90, timestampNS);
+            VideoFrame videoFrame = new VideoFrame(buffer, FACE_ANONYMIZATION_ROTATION + baseRotation, timestampNS);
             mObserver.onFrameCaptured(videoFrame);
             videoFrame.release();
         } catch (Exception e) {
@@ -255,7 +268,7 @@ public class AndroidCameraCapturer extends Camera1Capturer implements VideoCaptu
 
                     cameraDevice.createCaptureSession(surfaceList, mCaptureSessionListener, mCameraThreadHandler);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    Log.e(TAG, "mCameraListener::onOpened: Failed.", e);
                 }
             }
         }
