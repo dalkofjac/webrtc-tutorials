@@ -109,6 +109,7 @@ public class AndroidCameraCapturer extends Camera1Capturer implements VideoCaptu
         if (mFaceAnonymizer != null) {
             mFaceAnonymizer.dispose();
         }
+        closeCameraDevice(mCameraDevice);
         super.dispose();
     }
 
@@ -245,6 +246,20 @@ public class AndroidCameraCapturer extends Camera1Capturer implements VideoCaptu
         }
     }
 
+    private void closeCameraDevice(CameraDevice cameraDevice) {
+        Log.d(TAG, "closeCameraDevice");
+
+        try {
+            cameraDevice.close();
+            if (mImageReader != null) {
+                mImageReader.close();
+                mImageReader = null;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "closeCameraDevice: Failed. ", e);
+        }
+    }
+
     private final CameraDevice.StateCallback mCameraListener = new CameraDevice.StateCallback() {
         @Override
         public void onOpened(@NonNull CameraDevice cameraDevice) {
@@ -276,11 +291,13 @@ public class AndroidCameraCapturer extends Camera1Capturer implements VideoCaptu
         @Override
         public void onDisconnected(@NonNull CameraDevice cameraDevice) {
             Log.w(TAG, "mCameraListener::onDisconnected");
+            closeCameraDevice(cameraDevice);
         }
 
         @Override
         public void onError(@NonNull CameraDevice cameraDevice, int error) {
             Log.e(TAG, "mCameraListener::onError");
+            closeCameraDevice(cameraDevice);
         }
     };
 
