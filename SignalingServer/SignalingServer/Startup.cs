@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using SignalingServer.Helpers;
 using SignalingServer.Hubs;
 using System.Text;
 using System.Threading.Tasks;
@@ -70,6 +72,8 @@ namespace SignalingServer
                 o.EnableDetailedErrors = true;
                 o.MaximumReceiveMessageSize = 1000000;
             });
+
+            services.AddHttpClient();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -100,6 +104,7 @@ namespace SignalingServer
                 endpoints.MapHub<StarSignalingHub>("/hubs/star-signaling");
                 endpoints.MapHub<SFUSignalingHub>("/hubs/sfu-signaling");
                 endpoints.MapHub<MCUSignalingHub>("/hubs/mcu-signaling");
+                endpoints.MapHub<OpenAIHub>("/hubs/openai");
             });
         }
     }

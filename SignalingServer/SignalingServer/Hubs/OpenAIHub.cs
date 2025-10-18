@@ -1,16 +1,17 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using SignalingServer.Helpers;
+using SignalingServer.Models;
 using System.Threading.Tasks;
 
 namespace SignalingServer.Hubs
 {
-    [AllowAnonymous]
-    public class AuthHub : Hub
+    [Authorize]
+    public class OpenAIHub : Hub
     {
-        public async Task<string> Authorize()
+        public async Task<string> GenerateSDP(string localSDP)
         {
-            return await Task.Run(() => { return TokenHelper.GenerateToken(); });
+            return await OpenAIHelper.GenerateSDPAsync(localSDP);
         }
     }
 }

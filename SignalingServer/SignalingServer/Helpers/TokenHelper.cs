@@ -3,7 +3,7 @@ using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 
-namespace SignalingServer
+namespace SignalingServer.Helpers
 {
     public static class TokenHelper
     {

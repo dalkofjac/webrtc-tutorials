@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using SignalingServer.Models;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;

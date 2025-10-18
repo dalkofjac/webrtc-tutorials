@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace SignalingServer
+namespace SignalingServer.Models
 {
     public class HubClient
     {
@@ -15,7 +15,7 @@ namespace SignalingServer
         }
     }
 
-    public static class HubClientType 
+    public static class HubClientType
     {
         public static readonly string CentralUnit = "central_unit";
 
