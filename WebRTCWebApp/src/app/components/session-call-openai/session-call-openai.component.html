@@ -2,14 +2,22 @@
   <mat-toolbar-row>
     <span><strong>WebRTC Webapp</strong></span>
     <span class="main-spacer"></span>
+    <button *ngIf="!isMicActive" class="mic" mat-mini-fab (click)="activateMic(true)">
+      <mat-icon>mic</mat-icon>
+    </button>
+    <button *ngIf="isMicActive" class="mic" mat-mini-fab (click)="activateMic(false)">
+      <mat-icon>mic_off</mat-icon>
+    </button>
     <button mat-mini-fab color="accent" routerLink="">
       <mat-icon>call_end</mat-icon>
     </button>
   </mat-toolbar-row>
 </mat-toolbar>
 <div class="content">
-  <div class="videos">
+  <h1 class="title">Chat with OpenAI</h1>
+  <div class="media">
     <video #localVideo id="localVideo" autoplay controls></video>
-    <video #remoteVideo id="remoteVideo" autoplay controls></video>
+    <audio #remoteAudio id="remoteAudio" autoplay controls title="OpenAI">
+    </audio>
   </div>
 </div>

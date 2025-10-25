@@ -20,7 +20,7 @@ namespace SignalingServer.Helpers
                 var sessionConfig = new
                 {
                     type = "realtime",
-                    model = "gpt-realtime",
+                    model = "gpt-realtime-mini", // or "gpt-realtime"
                     audio = new
                     {
                         output = new { voice = "marin" }

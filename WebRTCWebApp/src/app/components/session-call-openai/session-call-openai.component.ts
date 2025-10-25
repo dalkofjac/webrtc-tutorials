@@ -14,25 +14,20 @@ import { environment } from 'src/environments/environment';
 export class SessionCallOpenaiComponent implements OnInit, OnDestroy {
 
   @ViewChild('localVideo') localVideo: ElementRef;
-  @ViewChild('remoteVideo') remoteVideo: ElementRef;
+  @ViewChild('remoteAudio') remoteAudio: ElementRef;
 
   localStream: MediaStream;
   remoteStream: MediaStream;
 
-  room: string;
   peerConnection: RTCPeerConnection;
   dataChannel: RTCDataChannel;
 
   isStarted: boolean;
+  isMicActive: boolean = false;
 
   constructor(
-    private snack: MatSnackBar,
-    private route: ActivatedRoute,
     private signaling: SignalrService
   ) {
-    this.route.paramMap.subscribe(async param => {
-      this.room = param['params']['room'];
-    });
   }
 
   ngOnInit(): void {
@@ -67,6 +62,7 @@ export class SessionCallOpenaiComponent implements OnInit, OnDestroy {
       this.createPeerConnection();
 
       this.peerConnection.addTrack(this.localStream.getAudioTracks()[0], this.localStream);
+      this.activateMic(this.isMicActive);
 
       this.isStarted = true;
       this.createDataChannel();
@@ -126,7 +122,7 @@ export class SessionCallOpenaiComponent implements OnInit, OnDestroy {
   addRemoteStream(stream: MediaStream): void {
     console.log('Remote stream added.');
     this.remoteStream = stream;
-    this.remoteVideo.nativeElement.srcObject = this.remoteStream;
+    this.remoteAudio.nativeElement.srcObject = this.remoteStream;
   }
 
   createDataChannel(): void {
@@ -154,6 +150,16 @@ export class SessionCallOpenaiComponent implements OnInit, OnDestroy {
       },
     };
     this.dataChannel.send(JSON.stringify(event));
+  }
+
+  activateMic(enabled: boolean): void {
+    console.log('Setting microphone enabled: ', enabled);
+    this.isMicActive = enabled;
+    if (this.localStream) {
+      this.localStream.getAudioTracks().forEach((track) => {
+        track.enabled = enabled;
+      });
+    }
   }
 
   hangup(): void {

@@ -6,14 +6,29 @@ body {
   font-family: sans-serif;
 }
 
-.videos {
+.title {
+  text-align: center;
+  margin: 10px;
+}
+
+.media {
   margin-top: 5px;
   text-align: center;
   height: 50%;
 
   video {
-    width: 49%;
+    width: 48%;
     height: 50vh;
     margin: 3px;
   }
+
+  audio {
+    width: 48%;
+    height: 40vh;
+    margin: 3px;
+  }
+}
+
+.mic {
+  margin-right: 10px;
 }
