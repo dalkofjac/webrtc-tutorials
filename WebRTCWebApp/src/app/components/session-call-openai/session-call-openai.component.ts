@@ -1,8 +1,6 @@
 // Created according to https://platform.openai.com/docs/guides/realtime-webrtc
 
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { ActivatedRoute } from '@angular/router';
 import { SignalrService } from 'src/app/services/signalr.service';
 import { environment } from 'src/environments/environment';
 
@@ -15,6 +13,9 @@ export class SessionCallOpenaiComponent implements OnInit, OnDestroy {
 
   @ViewChild('localVideo') localVideo: ElementRef;
   @ViewChild('remoteAudio') remoteAudio: ElementRef;
+
+  pageTitle = 'Chat with OpenAI';
+  backgroundColor = '#ffffff';
 
   localStream: MediaStream;
   remoteStream: MediaStream;
@@ -128,28 +129,87 @@ export class SessionCallOpenaiComponent implements OnInit, OnDestroy {
   createDataChannel(): void {
     console.log('Creating data channel.');
     this.dataChannel = this.peerConnection.createDataChannel('openai-events');
-    this.dataChannel.addEventListener('message', (e) => {
-      const event = JSON.parse(e.data);
-      console.log('Received OpenAI event.', event);
-    });
+    this.dataChannel.onopen = () => this.defineFunctions();
+    this.dataChannel.addEventListener('message', (e) => this.handleMessage(e));
   }
 
-  sendDataChannelMessage(message: string): void {
-    // Send client events
+  defineFunctions(): void {
+    console.log('Defining OpenAI functions.');
     const event = {
-      type: "conversation.item.create",
-      item: {
-          type: "message",
-          role: "user",
-          content: [
-              {
-                  type: "input_text",
-                  text: message,
-              },
-          ],
-      },
+      type: 'session.update',
+      session: {
+        tools: [{
+          type: 'function',
+          name: 'change_page_title',
+          description: 'Change the title of this HTML page.',
+          parameters: {
+            type: 'object',
+            properties: {
+                title: {
+                    type: 'string',
+                    description: 'The page title.'
+                }
+            },
+            required: ['title']
+          }
+        }, {
+          type: 'function',
+          name: 'change_page_background_color',
+          description: 'Change the background color of this HTML page.',
+          parameters: {
+            type: 'object',
+            properties: {
+                color: {
+                    type: 'string',
+                    description: 'The RGB code for HTML page background color, e.g. #ffffff for white.'
+                }
+            },
+            required: ['color']
+          }
+        }],
+        tool_choice: 'auto'
+      }
     };
     this.dataChannel.send(JSON.stringify(event));
+  }
+
+  handleMessage(e: any): void {
+    const event = JSON.parse(e.data);
+    console.log('Received OpenAI event.', event);
+
+    // Only handle final responses with function calls
+    if (event.type === 'response.done' && event.response?.output?.length) {
+      for (const item of event.response.output) {
+        if (item.type === 'function_call') {
+          const name = item.name;
+          let args: any = {};
+
+          try {
+            args = JSON.parse(item.arguments);
+          } catch (err) {
+            console.error('Failed to parse function arguments:', err);
+          }
+
+          // Handle function calls
+          switch (name) {
+            case 'change_page_title':
+              if (args.title) {
+                this.pageTitle = args.title;
+              }
+              break;
+
+            case 'change_page_background_color':
+              if (args.color) {
+                this.backgroundColor = args.color;
+              }
+              break;
+
+            default:
+              console.warn('Unknown function call:', name, args);
+          }
+        }
+      }
+    }
   }
 
   activateMic(enabled: boolean): void {

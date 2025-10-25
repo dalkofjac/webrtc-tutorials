@@ -13,8 +13,8 @@
     </button>
   </mat-toolbar-row>
 </mat-toolbar>
-<div class="content">
-  <h1 class="title">Chat with OpenAI</h1>
+<div class="content"  [ngStyle]="{'background-color': backgroundColor}">
+  <h1 class="title">{{ pageTitle }}</h1>
   <div class="media">
     <video #localVideo id="localVideo" autoplay controls></video>
     <audio #remoteAudio id="remoteAudio" autoplay controls title="OpenAI">
