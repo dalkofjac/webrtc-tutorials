@@ -8,15 +8,15 @@ namespace SignalingServer.Helpers
 {
     public static class OpenAIHelper
     {
-        private static readonly HttpClient httpClient = new HttpClient();
+        // Key fetched from https://platform.openai.com/api-keys
+        private static readonly string OPEN_AI_KEY = "YOUR_OPEN_AI_AUTH_KEY";
+
+        private static readonly HttpClient httpClient = new();
 
         public static async Task<string> GenerateSDPAsync(string localSDP)
         {
             try
             {
-                // Key fetched from https://platform.openai.com/api-keys
-                var openAIKey = "YOUR_OPEN_AI_AUTH_KEY";
-
                 var sessionConfig = new
                 {
                     type = "realtime",
@@ -34,7 +34,7 @@ namespace SignalingServer.Helpers
                 form.Add(new StringContent(sessionJson, Encoding.UTF8, "application/sdp"), "session");
 
                 var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/realtime/calls");
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", openAIKey);
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", OPEN_AI_KEY);
                 request.Content = form;
 
                 var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
@@ -49,7 +49,6 @@ namespace SignalingServer.Helpers
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"[OpenAIHelper] Token generation error: {ex}");
                 throw new Exception("Failed to generate SDP", ex);
             }
         }
