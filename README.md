@@ -17,7 +17,7 @@ The face recognition (anonymization) in Android app is implemented using [Google
 The WebRTC Android app now has full support for Android-based Augmented Reality smartglass devices (such as Vuzix M400, Google Glass EE2, RealWear Navigator 500, Almer Arc2 and similar). The implementation can be seen in [WebRTCAndroidApp](https://github.com/dalkofjac/webrtc-tutorials/tree/master/WebRTCAndroidApp). To test it out, just set the "USE_SMARTGLASS_OPTIMIZATION" flag to "true" in [WebRTCAndroidApp class](https://github.com/dalkofjac/webrtc-tutorials/blob/master/WebRTCAndroidApp/app/src/main/java/com/example/webrtcandroidapp/WebRTCAndroidApp.java).
 
 # OpenAI Realtime API integration with WebRTC
-The WebRTC web app has the full integration with [OpenAI's Realtime API] (https://platform.openai.com/docs/guides/realtime-webrtc) using .NET WebAPI as backend (to fetch the remote SDP).
+The WebRTC web app has the full integration with [OpenAI's Realtime API](https://platform.openai.com/docs/guides/realtime-webrtc) using .NET WebAPI as backend (to fetch the remote SDP).
 
 This integration features:
 - real-time audio chat with OpenAI agent
