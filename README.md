@@ -16,8 +16,20 @@ The face recognition (anonymization) in Android app is implemented using [Google
 # Android-based AR smartglass support
 The WebRTC Android app now has full support for Android-based Augmented Reality smartglass devices (such as Vuzix M400, Google Glass EE2, RealWear Navigator 500, Almer Arc2 and similar). The implementation can be seen in [WebRTCAndroidApp](https://github.com/dalkofjac/webrtc-tutorials/tree/master/WebRTCAndroidApp). To test it out, just set the "USE_SMARTGLASS_OPTIMIZATION" flag to "true" in [WebRTCAndroidApp class](https://github.com/dalkofjac/webrtc-tutorials/blob/master/WebRTCAndroidApp/app/src/main/java/com/example/webrtcandroidapp/WebRTCAndroidApp.java).
 
+# OpenAI Realtime API integration with WebRTC
+The WebRTC web app has the full integration with [OpenAI's Realtime API] (https://platform.openai.com/docs/guides/realtime-webrtc) using .NET WebAPI as backend (to fetch the remote SDP).
+
+This integration features:
+- real-time audio chat with OpenAI agent
+- agent's function calling in code (e.g. changing page title or background color)
+- live transcription of agent's messages
+
+To test it out, just select "Chat with OpenAI" option on the web app's home screen.
+
+Note: For integration to work, OpenAI's API key is needed with some credits available on the account (since Realtime API isn't free).
+
 # Blog
-Find more details on the implementation itself on the [blog site](https://ekobit.com/author/dkofjacekobit-hr/) and [my LinkedIn](https://www.linkedin.com/in/dalibor-kofjac/).
+Find more details on the implementation itself on [my LinkedIn](https://www.linkedin.com/in/dalibor-kofjac/).
 
 # License
 This repository uses [MIT license](https://github.com/dalkofjac/webrtc-tutorials/blob/master/LICENSE). Copyright (c) Dalibor Kofjač.
