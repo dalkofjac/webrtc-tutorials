@@ -16,6 +16,7 @@ export class SessionCallOpenaiComponent implements OnInit, OnDestroy {
 
   pageTitle = 'Chat with OpenAI';
   backgroundColor = '#ffffff';
+  transcription = 'Unmute the mic and start the conversation!';
 
   localStream: MediaStream;
   remoteStream: MediaStream;
@@ -138,6 +139,7 @@ export class SessionCallOpenaiComponent implements OnInit, OnDestroy {
     const event = {
       type: 'session.update',
       session: {
+        type: "realtime",
         tools: [{
           type: 'function',
           name: 'change_page_title',
@@ -177,6 +179,15 @@ export class SessionCallOpenaiComponent implements OnInit, OnDestroy {
     const event = JSON.parse(e.data);
     console.log('Received OpenAI event.', event);
 
+    // Check if the response contains the transcript
+    if (event?.response?.output?.[0]?.content?.[0]?.transcript) {
+      const transcript = event.response.output[0].content[0].transcript;
+      console.log('Transcript:', transcript);
+
+      // Update your transcription variable
+      this.transcription = transcript;
+    }
+
     // Only handle final responses with function calls
     if (event.type === 'response.done' && event.response?.output?.length) {
       for (const item of event.response.output) {
@@ -195,12 +206,14 @@ export class SessionCallOpenaiComponent implements OnInit, OnDestroy {
             case 'change_page_title':
               if (args.title) {
                 this.pageTitle = args.title;
+                this.confirmFunctionCall(item.call_id, `Title changed to "${args.title}"`);
               }
               break;
 
             case 'change_page_background_color':
               if (args.color) {
                 this.backgroundColor = args.color;
+                this.confirmFunctionCall(item.call_id, `Background color changed to "${args.color}"`);
               }
               break;
 
@@ -210,6 +223,19 @@ export class SessionCallOpenaiComponent implements OnInit, OnDestroy {
         }
       }
     }
+  }
+
+  confirmFunctionCall(callId: string, output: string): void {
+    console.log('Confirming function call.', callId, output);
+    const event = {
+      type: "conversation.item.create",
+      item: {
+        type: "function_call_output",
+        call_id: callId,
+        output: output
+      }
+    };
+    this.dataChannel.send(JSON.stringify(event));
   }
 
   activateMic(enabled: boolean): void {
